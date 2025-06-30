@@ -1,0 +1,42 @@
+name: 🚀 Auto Deploy to Finbiz Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🔐 Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H srv837293 >> ~/.ssh/known_hosts
+
+      - name: 🚀 Deploy to Server
+        run: |
+          ssh root@srv837293 << 'EOF'
+            set -e
+
+            echo "📥 Pulling latest code"
+            cd /var/www/finbiz
+            git pull origin main
+
+            echo "⚙️ Installing frontend dependencies"
+            cd frontend
+            npm install
+            npm run build
+
+            echo "🔄 Restarting backend"
+            cd /var/www/finbiz/backend
+            systemctl restart finbiz-backend.service
+
+            echo "✅ Deployment complete"
+          EOF
