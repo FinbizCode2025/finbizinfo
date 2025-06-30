@@ -1,0 +1,239 @@
+.chat-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 18px;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1000;
+    transition: background-color 0.3s ease;
+  }
+  
+  .chat-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .chat-icon {
+    font-size: 24px;
+  }
+  
+  /* Chatbox Container */
+  .chatbox-container {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 380px;
+    height: 500px;
+    background-color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+  }
+  
+  /* Dark Mode Styles */
+  .chatbox-container.dark {
+    background-color: #121212;
+    color: white;
+  }
+  
+  /* Light Mode Styles */
+  .chatbox-container.light {
+    background-color: white;
+    color: black;
+  }
+  
+  /* Header Styling */
+  .chatbox-header {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 20px 20px 0 0; /* Top corners rounded */
+    align-items: center;
+  }
+  
+  .chat-title {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .close-chat-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
+  /* Message Area */
+  .chatbox {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    overflow-y: auto;
+    border-radius: 0 0 20px 20px; /* Bottom corners rounded */
+  }
+  
+  .message {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: flex-start;
+  }
+  
+  .user-message {
+    justify-content: flex-end;
+  }
+  
+  .bot-message {
+    justify-content: flex-start;
+  }
+  
+  .message-bubble {
+    padding: 12px;
+    border-radius: 20px;
+    max-width: 70%;
+    word-wrap: break-word;
+  }
+  
+  .user-bubble {
+    background-color: #007bff;
+    color: white;
+    margin-left: 10px;
+    border-radius: 20px 20px 0 20px; /* Rounded corners on the right */
+  }
+  
+  .bot-bubble {
+    background-color: #e5e5e5;
+    color: black;
+    margin-right: 10px;
+    border-radius: 20px 20px 20px 0; /* Rounded corners on the left */
+  }
+  
+  /* Chat Input Area */
+  .chatbox-input-container {
+    display: flex;
+    padding: 8px 10px;
+    background-color: #f4f4f4;
+    border-top: 1px solid #ddd;
+    border-radius: 0 0 20px 20px; /* Bottom corners rounded */
+  }
+  
+  /* Dark Mode Input Section */
+  .chatbox-input-container.dark {
+    background-color: #333;
+    border-top: 1px solid #444;
+  }
+  
+  .chatbox-input-container.light {
+    background-color: #f4f4f4;
+    border-top: 1px solid #ddd;
+  }
+  
+  /* Chat Input Field */
+  .chat-input {
+    width: 85%;
+    padding: 8px 12px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    transition: border-color 0.3s ease;
+    height: 35px; /* Reduced height */
+  }
+  
+  /* Dark Mode Input Field */
+  .chat-input.dark {
+    background-color: #444;
+    color: white;
+    border-color: #555;
+  }
+  
+  /* Light Mode Input Field */
+  .chat-input.light {
+    background-color: white;
+    color: black;
+    border-color: #ddd;
+  }
+  
+  .chat-input:focus {
+    border-color: #007bff;
+  }
+  
+  /* Send Button */
+  .send-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px; /* Reduced padding for smaller button */
+    border-radius: 50%;
+    cursor: pointer;
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+  }
+  
+  .send-button:hover {
+    background-color: #0056b3;
+  }
+  
+  /* Dark Mode Send Button */
+  .send-button.dark {
+    background-color: #444;
+    color: white;
+  }
+  
+  .send-button.dark:hover {
+    background-color: #666;
+  }
+  
+  /* Light Mode Send Button */
+  .send-button.light {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .send-button.light:hover {
+    background-color: #0056b3;
+  }
+  
+  .send-icon {
+    font-size: 20px;
+  }
+  
+  .loading {
+    font-style: italic;
+    color: grey;
+  }
+  
+  /* Responsiveness */
+  @media (max-width: 768px) {
+    .chatbox-container {
+      width: 350px;
+      height: 450px;
+    }
+  
+    .chat-title {
+      font-size: 16px;
+    }
+  
+    .chatbox-header {
+      padding: 10px;
+    }
+  
+    .chatbox {
+      padding: 15px;
+    }
+  }
+  

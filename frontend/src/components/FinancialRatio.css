@@ -1,0 +1,72 @@
+.layer1 {
+    border: 1px dashed grey;
+    padding: 30px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.feedback {
+    display: none;
+    float: right;
+    border: 1px solid red;
+    border-radius: 20px;
+    text-align: center;
+    padding: 7px;
+}
+
+textarea {
+    width: 100%;
+    padding: 8px;
+}
+
+.feedback-submit-button {
+    border: black 2px solid;
+    background-color: royalblue;
+    border-radius: 5px;
+    padding: 7px;
+    margin: 15px;
+    color: white;
+}
+
+.response {
+    border-radius: 8px;
+    width: 100%;
+    text-align: left;
+    padding: 9px;
+}
+
+.financial_statement {
+    text-align: center;
+    margin: 10px;
+    padding: 10px;
+}
+
+.bot-message-markdown {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.bot-message-markdown h3,
+.bot-message-markdown h4 {
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.bot-message-markdown ul {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.bot-message-markdown p {
+  margin: 6px 0;
+}
+
+.bot-message-markdown code {
+  background: #eaeaea;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: Consolas, monospace;
+}
