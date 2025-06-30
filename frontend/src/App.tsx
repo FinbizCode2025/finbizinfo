@@ -23,7 +23,7 @@ function App() {
 
   const handleFileUploadForMarkdown = async (file: File) => {
     if (!apiKey) {
-      setErrorMessage('Please enter your API key before uploading.');
+      setErrorMessage('saale api kya tera baap daalega____');
       return;
     }
 
@@ -64,7 +64,7 @@ function App() {
       console.log('Markdown file generated successfully.');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      setErrorMessage('An error occurred while uploading the PDF. Please try again.');
+      setErrorMessage('server ki gand fat gyi bhai. Please try again.');
     } finally {
       setIsUploading(false);
     }
