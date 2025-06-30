@@ -34,9 +34,7 @@ jobs:
             npm install
             npm run build
 
-            echo "🔄 Restarting backend"
-            cd /var/www/finbiz/backend
-            systemctl restart finbiz-backend.service
+           
 
             echo "✅ Deployment complete"
           EOF
