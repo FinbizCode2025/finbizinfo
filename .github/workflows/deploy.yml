@@ -30,7 +30,7 @@ jobs:
             git pull origin main
 
             echo "⚙ Installing frontend dependencies"
-            cd Frontend
+            cd frontend
             npm install
             npm run build
 
