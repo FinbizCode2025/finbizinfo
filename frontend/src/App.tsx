@@ -188,7 +188,7 @@ const App: React.FC = () => {
                 ${visibleSection === 'audit' ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-400 hover:bg-blue-50'}`}
               onClick={() => setVisibleSection('audit')}
             >
-              Auditor's Report section
+              Auditor's Report
             </button>
             <button
               className={`px-6 py-2 rounded-full font-semibold shadow transition 
