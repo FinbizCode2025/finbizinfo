@@ -1,20 +1,74 @@
 import os
 import json
 import traceback
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, session
 from flask_cors import CORS
 import google.generativeai as genai
-from docling.document_converter import DocumentConverter
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_mysqldb import MySQL, MySQLdb
+from werkzeug.security import generate_password_hash, check_password_hash
+import re
+import matplotlib.pyplot as plt
+import requests
+import time
 
 # --- Initialize Flask App ---
 app = Flask(__name__)
 CORS(app)  # Allow requests from your frontend origin
 
-# --- Configuration ---
-GOOGLE_API_KEY = 'AIzaSyAgjjIB1JKQL0L9wIKUb4XBCUYtXeiomjc'
+# MySQL Configuration
+app.config['MYSQL_HOST'] = '194.164.151.51'
+app.config['MYSQL_USER'] = 'finbizuser'
+app.config['MYSQL_PASSWORD'] = 'Log!n123@1P'  # empty string for no password
+app.config['MYSQL_DB'] = 'financial_analysis'
+app.config['MYSQL_PORT'] = 3306
 
-if not GOOGLE_API_KEY:
-    raise ValueError("FATAL ERROR: GOOGLE_API_KEY environment variable not set.")
+mysql = MySQL(app)
+
+# JWT Setup
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Change this to a secure secret key!
+jwt = JWTManager(app)
+
+GOOGLE_API_KEY = ''
+API_TOKEN = "d1f7038fdfc82142b3db85a185304e9fed459089"
+PAPERLESS_URL = "http://194.164.151.51"
+
+headers = {
+    "Authorization": f"Token {API_TOKEN}"
+}
+
+# Add a global variable to allow updating the API key at runtime
+google_api_key = GOOGLE_API_KEY
+
+@app.route('/api/set-api-key', methods=['POST'])
+def set_api_key():
+    """
+    Set the Google API key at runtime.
+    Expects JSON: { "api_key": "YOUR_KEY" }
+    """
+    global google_api_key, model
+    data = request.get_json()
+    if not data or 'api_key' not in data:
+        return jsonify({'error': 'API key is required.'}), 400
+
+    google_api_key = data['api_key']
+    try:
+        genai.configure(api_key=google_api_key)
+        MODEL_NAME = 'gemini-1.5-flash'
+        model = genai.GenerativeModel(MODEL_NAME)
+        print(f"Google API key updated and model reconfigured.")
+        return jsonify({'message': 'API key updated successfully.'}), 200
+    except Exception as e:
+        print("Failed to update Google API key:", str(e))
+        print(traceback.format_exc())
+        return jsonify({'error': f"Failed to update API key: {e}"}), 500
+
+@app.route('/api/get-api-key', methods=['GET'])
+def get_api_key():
+    """
+    Get the current Google API key (for admin/debug only).
+    """
+    return jsonify({'api_key': google_api_key}), 200
 
 try:
     genai.configure(api_key=GOOGLE_API_KEY)
@@ -26,20 +80,50 @@ except Exception as e:
 
 # --- Financial Ratio Definitions ---
 RATIO_FORMULAS = """
+Net Profit Margin = Net Profit After Tax / Revenue from Operations
 Current Ratio = Current Assets / Current Liabilities
-Quick Ratio = (Current Assets - Inventory) / Current Liabilities
-Debt-to-Equity Ratio = Total Debt / Total Equity
-Gross Profit Margin = (Revenue - Cost of Goods Sold) / Revenue
-Net Profit Margin = Net Income / Revenue
-Return on Equity (ROE) = Net Income / Average Shareholder's Equity
-Inventory Turnover = Cost of Goods Sold / Average Inventory
-Accounts Receivable Turnover = Net Credit Sales / Average Accounts Receivable
+Quick Ratio = (Current Assets - Inventories - Prepaid Expenses) / Current Liabilities
+Debt-to-Equity Ratio = (Short Term Borrowings + Long Term Borrowings) / Shareholders' Equity
+Average Trade Receivables = (Opening Trade Receivables + Closing Trade Receivables) / 2
+Total Sales = Revenue from Operations + Other Income
+Gross Profit Margin = (Revenue from Operations - Cost of Goods Sold) / Revenue from Operations
+Return on Equity (ROE) = (Net Profit After Tax) / ((sum of net worth of both years) / 2)
+Inventory Turnover Ratio = Cost of Goods Sold / Average Inventory
+Accounts Receivable Turnover Ratio = Net Credit Sales / Average Accounts Receivable
 Asset Turnover Ratio = Net Sales / Average Total Assets
-Return on Assets (ROA) = Net Income / Average Total Assets
-Earnings Per Share (EPS) = (Net Income - Preferred Dividends) / Average Outstanding Common Shares
-Price-to-Earnings (P/E) Ratio = Market Price per Share / Earnings Per Share (EPS)
+Return on Assets (ROA) = Net Profit After Tax / Average Total Assets
+Earnings Per Share (EPS) = (Net Profit After Tax - Preference Dividend) / Weighted Average Number of Equity Shares Outstanding
+Price-to-Earnings (P/E) Ratio = Market Price per Equity Share / Earnings Per Share (EPS)
 Debt Ratio = Total Liabilities / Total Assets
-Times Interest Earned (TIE) = Earnings Before Interest and Taxes (EBIT) / Interest Expense
+EBIT = Profit/Loss Before Tax + Expense(Finance Costs)
+EBITDA = EBIT + Depreciation and Amortization
+EBIT Margin = EBIT / Revenue from Operations
+EBITDA Margin = EBITDA / Revenue from Operations
+Times Interest Earned (TIE) = EBIT / Finance Costs
+Working Capital = Current Assets - Current Liabilities
+Interest Coverage Ratio = EBIT / Interest Expense
+Operating Profit Margin = Operating Profit / Revenue from Operations
+Cash Ratio = (Cash and Cash Equivalents + Marketable Securities) / Current Liabilities
+Dividend Payout Ratio = Dividend Declared / Net Profit After Tax
+Book Value Per Share = (Shareholders' Equity - Preference Share Capital) / Number of Equity Shares Outstanding
+Capital Gearing Ratio = Fixed Cost Bearing Capital / Equity Shareholders' Funds
+Proprietary Ratio = Shareholders' Funds / Total Tangible Assets
+Long-term Debt to Capitalization Ratio = Long-term Debt / (Long-term Debt + Shareholders' Equity)
+"""
+
+CARO_APPLICABLE_KEYWORDS = """
+CARO 2020 is applicable for all statutory audits commencing on or after 1 April 2021 corresponding to the financial year 2020-21. Please read values carefully or calculate necessary values required to check CARO's Applicability. The order is applicable to all companies which were covered by CARO 2016. Thus, CARO 2020 applies to all the companies currently, including a foreign company. However, it does not apply to the following companies:
+
+One person company.
+Small companies (Companies with paidup share capital + reserve and surplus less than/equal to Rs 4 crore and with a preceding financial year's total revenue is less than/equal to Rs 40 crore).
+Banking companies.
+Companies registered for charitable purposes.
+Insurance companies.
+The following private companies are also exempt from the requirements of CARO, 2020: –
+Whose gross receipts or revenue (including revenue from discontinuing operations) is less than or equal to Rs 10 crore in the financial year.
+Whose paid up share capital + reserves and surplus is less than or equal to Rs 1 crore as on the balance sheet date (i.e. usually at the end of the FY).
+Not a holding or subsidiary of a Public company.
+Whose borrowings is less than or equal to Rs 1 crore throughout the entire FY.
 """
 
 COMPLIANCE_RULES = [
@@ -149,6 +233,30 @@ COMPLIANCE_RULES = [
     }
 ]
 
+CAUTIONARY_ANALYSIS = """
+Objective: Search and analyze auditor reports strictly for instances of negligence, failure, or red flags in fulfilling professional responsibilities. ONLY report genuine cautionary points based on **explicit evidence in the report or annexed financials**. Do NOT infer or assume any issues without clear supporting evidence. DO NOT misinterpret standard or positive auditor actions as negative.
+
+Examples of valid cautionary findings include:
+
+1. Excessive reliance on management opinion without independent verification (must be clearly evident or stated).
+2. Failure to highlight significant issues (e.g., extraordinary items or material misstatements) visible from the financials but not addressed in the audit opinion.
+3. Missed or unreported fraud indicators (e.g., fictitious sales) that are reasonably inferable from annexed data or red flags.
+4. Non-compliance with legal/regulatory mandates (e.g., CARO report omissions or deficiencies).
+5. No qualified opinion or disclaimer issued despite conditions like negative net worth or going concern doubts.
+6. Significant related party transactions (e.g., >25% of sales or >30% of advances) not addressed in audit remarks.
+7. Failure to examine or disclose major contingent liabilities, provisions, or accounting estimates with significant financial impact.
+8. Misleading or incomplete audit reports (e.g., vague scope, no mention of limitations, boilerplate language without disclosures).
+
+Instructions:
+- DO NOT fabricate red flags.
+- DO NOT mark neutral or standard language as negative.
+- ONLY highlight genuine, supported cautionary or negative points.
+- Skip any section if no clear cautionary point is found.
+- Be objective, accurate, and avoid assumptions.
+
+If no valid negative point is found in a section, state clearly: “No cautionary point found in this area.”
+"""
+
 def extract_text_from_md(md_file):
     """Extracts text content from a Markdown file"""
     try:
@@ -160,44 +268,61 @@ def extract_text_from_md(md_file):
         return jsonify({'error': error_message}), 400
     
 def analyze_audit_report(md_text):
-    """Analyze an auditor's report and extract key information."""
+
     if not md_text.strip():
         return jsonify({'error': 'Markdown file has no extractable text.'}), 400
 
     prompt = f"""
-    As a Chartered Accountant, please review the following auditor's report text and provide insights based on the checklist below.
-    Identify key information and potential red flags.
+    As a Chartered Accountant, Analyse the following auditor's report markdown and provide insights in the following structured JSON format ONLY (no extra text), only read auditor's report text, not the financials or other sections.:
+
+    1. "Qualified_opinion": Analyse and provide a detailed qualifications/qualified opinion paragraph (at least 100 words if present, else state "The Auditors have not provided any Qualification").
+    2. "Emphasis_of_matter": Analyse the Emphasis of Matter paragraph(s) if present, else state "The Auditors have not drawn any attention to any Emphasis of Matter".
+    3. "CARO_applicability": Based on the auditor's report and the following CARO applicability rules, determine if CARO 2020 is applicable. In the "reason" field, clearly state which specific CARO applicability criteria (from the keywords/rules below) were met or not met, and quote the relevant text or numbers from the report that support your conclusion.
+    CARO Applicability Rules:
+    {CARO_APPLICABLE_KEYWORDS}
+    Respond in this JSON format:
+    {{
+      "is_applicable": true/false,
+      "available_in_report": true/false,
+      "reason": "State the exact CARO rule(s) or threshold(s) that apply, and quote the relevant supporting text or numbers from the auditor's report."
+    }}
+    4. "CARO_negative_points": Analyse and List only those CARO remarks with negative sentiment (prequisition) as a list of objects: {{ "rule": "...", "remarks": "..." }}. give me negative points if available, do not create positive and good information negative.
+    5. "Cautionary_Analysis": '{CAUTIONARY_ANALYSIS}' - Analyse the auditor's report for any instances of negligence or failures in fulfilling professional responsibilities, and provide a list of cautionary points as strings.
+    6. "Summary": '...(Summary of the auditor's report in concise paragraph, highlighting key points, qualifications, emphasis of matter, CARO applicability, and any cautionary points found.)'
 
     Auditor's Report Text:
     ```
     {md_text}
     ```
 
-    Provide your analysis in a structured JSON format. The JSON should look like:
+    Respond in the following JSON format:
     {{
-      "report_type": "...",
-      "compliance_standards": "...",
-      "emphasis_of_matter": "...",
-      "other_matters": "...",
-      "key_elements": {{
-        "title_addressee": "...",
-        "management_responsibility": "...",
-        "auditor_responsibility": "...",
-        "opinion_paragraph": "...",
-        "basis_for_opinion": "...",
-        "key_audit_matters": "...",
-        "emphasis_other_matters": "...",
-        "legal_regulatory_requirements": "...",
-        "signature_date_place_udin": "...",
+      "Qualified_opinion": "...",
+      "Emphasis_of_matter": "...",
+      "CARO_applicability": {{
+        "is_applicable": true/false,
+        "available_in_report": true/false,
+        "reason": "State the exact CARO rule(s) or threshold(s) that apply, and quote the relevant supporting text or numbers from the auditor's report."
       }},
-      "consistency": "...",
-      "red_flags": "...",
-      "summary": "..."
+      "CARO_negative_points": [
+        {{"rule": "...", "remarks": "..."}},
+        ...
+      ],
+      "Cautionary_Analysis": [
+        "..."
+      ]
     }}
     """
 
     try:
-        response = model.generate_content(prompt)
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
         print("Gemini raw response:\n", response.text)
 
         json_start = response.text.find('{')
@@ -208,7 +333,20 @@ def analyze_audit_report(md_text):
         json_text = response.text[json_start:json_end + 1]
         analysis_result = json.loads(json_text)
 
-        return analysis_result
+        # Ensure all required keys exist
+        result = {
+            "Qualified_opinion": analysis_result.get("Qualified_opinion", ""),
+            "Emphasis_of_matter": analysis_result.get("Emphasis_of_matter", ""),
+            "CARO_applicability": analysis_result.get("CARO_applicability", {
+                "is_applicable": None,
+                "available_in_report": None,
+                "reason": ""
+            }),
+            "CARO_negative_points": analysis_result.get("CARO_negative_points", []),
+            "Cautionary_Analysis": analysis_result.get("Cautionary_Analysis", []),
+        }
+
+        return result
 
     except Exception as e:
         print("Error in Gemini response processing:", str(e))
@@ -216,84 +354,217 @@ def analyze_audit_report(md_text):
         return jsonify({'error': f"Gemini error: {str(e)}"}), 500
     
 def check_director_compliance_rules(text):
-    results = []
-    text_lower = text.lower()
-
-    compliant_count = 0
-
-    for rule in COMPLIANCE_RULES:
-        found = any(keyword.lower() in text_lower for keyword in rule["keywords"])
-        if found:
-            compliant_count += 1
-        results.append({
-            "rule": rule["rule"],
-            "status": "Compliant" if found else "Non-Compliant",
-            "remarks": "" if found else f"Missing disclosures: {', '.join(rule['keywords'])}"
-        })
-
-    total_rules = len(COMPLIANCE_RULES)
-    if compliant_count == total_rules:
-        conclusion = "Fully Compliant – All required disclosures are present."
-    elif compliant_count == 0:
-        conclusion = "Non-Compliant – No required disclosures found."
-    else:
-        conclusion = f"Partially Compliant – {compliant_count} out of {total_rules} rules satisfied."
-
-    return {
-        "results": results,
-        "conclusion": conclusion
-    }
-
-def generate_automatic_ratio_analysis(markdown_content, ratio_formulas):
-    """Generates response using AI to automatically calculate all possible ratios."""
-    prompt = f"""
-    I’m uploading a financial report (e.g., annual report or Form 10-K) for a company. Please analyze the document and:
-
-    Determine whether it includes the necessary numerical data to calculate key financial ratios. Specifically, look for:
-    Net Sales (Revenue)
-    Gross Profit
-    Net Income
-    Total Assets
-    Total Liabilities
-    Shareholders’ Equity
-    Current Assets
-    Current Liabilities
-    Inventory
-    Cost of Goods Sold (COGS)
-    Number of Outstanding Shares (if available)
-    If the necessary financial data is missing or incomplete, explain what’s missing and outline the key financial ratios that would typically be calculated for such a company. Include:
-    The name and formula for each ratio
-    A short interpretation of what the ratio tells us about the business
-    Any relevant context or insights you can infer from the qualitative content of the report
-    If possible, create a hypothetical example of the ratios using estimated or assumed values, and explain the reasoning.
-    Please format the output clearly using headings for each ratio category (e.g., Profitability, Liquidity, Leverage, Efficiency, Market).
-    
-    **Financial Ratio Formulas:**
-    {ratio_formulas}
-
-    **MARKDOWN Content:**
-    ```text
-    {markdown_content}
-    ```
     """
-    
+    Uses Gemini model to analyze the director's report text for compliance with updated COMPLIANCE_RULES.
+    Returns a structured compliance result and conclusion.
+    """
     try:
-        response = model.generate_content(prompt)
+        # Build a detailed prompt for Gemini
+        prompt = f"""
+        You are a compliance expert. Carefully read the following director's report text and check for compliance with each of the rules listed below.
+        if auditor's report has stated fraud instance in the company then director's report must have explanation on each instance of fraud otherwise no comments is required to be mentioned in the director's report.
+        Voluntary Revision - S 131 should always be compliant.
+        and a summary of overall compliance status should be provided at the end.
+        For each rule, state:
+        - "Compliant" if all required disclosures/keywords are present (even if phrased differently), Voluntary Revision should always compliant.
+        - "Not Applicable" if company does not required to have this disclosure.
+        - "Non-Compliant" if the disclosure is missing or insufficient.
+        - In "Remarks", mention the matched keywords/phrases or what is missing, dont not include insignificient concerns.
+
+        Rules to check (with keywords for reference):
+        {json.dumps(COMPLIANCE_RULES, indent=2)}
+
+        Director's Report Text:
+        \"\"\"
+        {text}
+        \"\"\"
+        Respond in the following JSON format:
+        {{
+        "results": 
+            {{
+            "rule": "...",
+            "status": "Compliant" or "Non-Compliant",
+            "remarks": "..."
+            }},
+        "conclusion": "Summary of overall compliance"
+        }}
+
+        "Summary of overall compliance" should be a short paragraph summarizing the compliance status of the report.
+        """
+
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
+        print("Gemini compliance response:\n", response.text)
+
+        json_start = response.text.find('{')
+        json_end = response.text.rfind('}')
+        if json_start == -1 or json_end == -1:
+            raise ValueError("Gemini response did not include a valid JSON block.")
+
+        json_text = response.text[json_start:json_end + 1]
+        analysis = json.loads(json_text)
+
+        return analysis
+
+    except Exception as e:
+        print("Error in Gemini compliance processing:", str(e))
+        print(traceback.format_exc())
+        return {
+            "results": [],
+            "conclusion": f"Gemini error: {str(e)}"
+        }
+    
+def generate_automatic_ratio_analysis(markdown_content, ratio_formulas):
+    """Generates response using AI to automatically calculate all possible ratios, and prints only the most critical missing information before the conclusion."""
+    prompt = f"""
+You are a financial analyst. Carefully analyze the following financial report (in Markdown format) and do the following:
+
+Extract all available numerical data required for key financial ratios (specially ebit, ebitda, net sales, total assets, etc.) from the markdown content.:
+Use ONLY the formulas provided below for all ratio calculations. Do NOT use any formula or definition not present in the list:
+Net Sales (from operations)
+Total Sales (including other income)
+Net Income
+Total Assets
+Total Liabilities
+Shareholders’ Equity
+Current Assets
+Current Liabilities
+Inventory
+EBIT
+EBITDA
+Average Trade Receivables
+Number of Outstanding Shares (if available)`
+Any other relevant figures
+For each ratio in the list below, attempt to calculate it using the extracted data.
+Use the exact formula provided.
+Substitute the actual numbers from the markdown into the formula.
+Show the calculation steps and the final value.
+If any required data is missing or unclear, explicitly list what is missing for that ratio.
+For each calculated ratio, provide:
+The formula used (as provided below)
+The calculation steps with actual numbers from the markdown
+The final value
+A short interpretation of what the ratio means for the business
+Missing Information Section:
+List up to 3 critical missing or unclear data points that prevented calculation.
+Provide a clear, concise summary/conclusion at the end, ensuring that:
+Revenue clarity is ensured, including after-tax figures.
+If possible, compare with the previous year.
+Highlight any mismatches or inconsistencies in financial data, particularly shareholder equity.
+Rephrase unclear cost-related sections and remove unnecessary estimation notes.
+Do not estimate or assume numbers not present in the markdown, and most importantly don't show not calculated ratios or values.
+
+Financial Ratio Formulas (use these exactly):
+{ratio_formulas}
+MARKDOWN Content:
+{markdown_content}
+    """
+
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
         if not response.parts:
             return f"Error: AI analysis failed. Reason: {response.prompt_feedback.block_reason.name if response.prompt_feedback.block_reason else 'No block reason provided.'}"
         return response.text.strip()
     except Exception as e:
         return f"Error: An unexpected error occurred while generating the analysis ({e})."
 
-def parse_pdf_with_docling(pdf_file_path):
-    """Extracts text from a PDF file using Docling and converts it to markdown."""
+def clean_markdown_content(markdown: str) -> str:
+    """
+    Cleans the markdown content by removing garbage values, extra whitespace, and non-informative lines.
+    - Removes lines with only special characters or random symbols.
+    - Removes repeated empty lines.
+    - Optionally, removes lines with very little alphanumeric content.
+    """
+    cleaned_lines = []
+    for line in markdown.splitlines():
+        # Remove lines that are only special characters or whitespace
+        if not line.strip():
+            continue
+        # Remove lines with very little alphanumeric content (e.g., OCR noise)
+        if len(re.sub(r'[^a-zA-Z0-9]', '', line)) < 2 and len(line.strip()) < 10:
+            continue
+        # Remove lines with only repeated special characters (e.g., "-----", "=====")
+        if re.match(r'^([^\w\s])\1{2,}$', line.strip()):
+            continue
+        cleaned_lines.append(line)
+    # Remove consecutive empty lines
+    cleaned_markdown = "\n".join(cleaned_lines)
+    cleaned_markdown = re.sub(r'\n{3,}', '\n\n', cleaned_markdown)
+    return cleaned_markdown.strip()
+
+def parse_pdf_with_paperless(pdf_path):
+    if not os.path.isfile(pdf_path):
+        return None, "File does not exist."
+
+    if not pdf_path.lower().endswith(".pdf"):
+        return None, "File is not a PDF."
+
     try:
-        converter = DocumentConverter()
-        result = converter.convert(pdf_file_path)
-        markdown = result.document.export_to_markdown()
-        return markdown, None
+        # Upload PDF to Paperless
+        with open(pdf_path, "rb") as f:
+            files = {
+                "document": (os.path.basename(pdf_path), f.read(), "application/pdf")
+            }
+            res = requests.post(
+                f"{PAPERLESS_URL}/api/documents/post_document/",
+                headers=headers,
+                files=files
+            )
+
+        if res.status_code != 200:
+            return None, f"Upload failed: {res.status_code} - {res.text}"
+
+        # Wait for Paperless to process the document
+        time.sleep(50)
+
+        # Search for the uploaded document by file name
+        search_params = {"original_file_name": os.path.basename(pdf_path)}
+        lookup = requests.get(f"{PAPERLESS_URL}/api/documents/", headers=headers, params=search_params)
+        lookup.raise_for_status()
+
+        results = sorted(
+            lookup.json().get("results", []),
+            key=lambda doc: doc.get("added", ""),
+            reverse=True,
+        )
+
+        if not results:
+            return None, "Uploaded document not found."
+
+        # Get document ID
+        latest_doc = results[0]
+        doc_id = latest_doc["id"]
+
+        # Poll for OCR content
+        for _ in range(15):
+            doc_info = requests.get(f"{PAPERLESS_URL}/api/documents/{doc_id}/", headers=headers).json()
+            content = doc_info.get("content", "").strip()
+            ocr_status = doc_info.get("ocr_status")
+
+            if content:
+                return content, None
+            elif ocr_status == "failed":
+                return None, "OCR failed."
+
+            time.sleep(2)
+
+        return None, "Timed out waiting for OCR content."
+
     except Exception as e:
-        return None, f"Error during Docling conversion: {e}"
+        return None, f"Exception during Paperless processing: {e}"
 
 # --- Flask Routes ---
 @app.route('/analyze_pdf_ratios', methods=['POST'])
@@ -347,8 +618,8 @@ def generate_markdown():
     os.makedirs(os.path.dirname(pdf_file_path), exist_ok=True)
     pdf_file.save(pdf_file_path)
 
-    # Parse PDF using Docling
-    markdown_content, error = parse_pdf_with_docling(pdf_file_path)
+    # Parse PDF using Paperless
+    markdown_content, error = parse_pdf_with_paperless(pdf_file_path)
 
     if error:
         return jsonify({'error': f"PDF Processing Failed: {error}"}), 400
@@ -429,10 +700,364 @@ def analyze_directors_report():
         print(traceback.format_exc())
         return jsonify({'error': f"Unexpected error: {e}"}), 500
 
+def generate_directors_report_summary(text):
+    try:
+        prompt = f"""
+        Summarize the following director's report in a concise paragraph, highlighting the main points, key disclosures, business performace, and any significant events or statements. The summary should be suitable for a board or compliance officer to quickly understand the essence of the report.
+
+        Director's Report Text:
+        \"\"\"
+        {text}
+        \"\"\"
+        Respond with only the summary text, no JSON or formatting.
+        """
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
+        summary = response.text.strip()
+        return summary
+    except Exception as e:
+        print("Error generating director's report summary:", str(e))
+        print(traceback.format_exc())
+        return "Summary generation failed."
+
+@app.route('/api/summary-directors-report', methods=['POST'])
+def summary_directors_report():
+    if 'md_file' not in request.files:
+        return jsonify({'error': "No Markdown file uploaded"}), 400
+
+    md_file = request.files['md_file']
+    if md_file.filename == '':
+        return jsonify({'error': "No file selected"}), 400
+
+    if not md_file.filename.lower().endswith('.md'):
+        return jsonify({'error': "Invalid file format. Please upload a Markdown (.md) file."}), 400
+
+    try:
+        md_text = md_file.read().decode('utf-8')
+        if not md_text.strip():
+            return jsonify({'error': 'Markdown file is empty.'}), 400
+
+        summary = generate_directors_report_summary(md_text)
+        return jsonify({'summary': summary}), 200
+
+    except Exception as e:
+        print("Unexpected error:", str(e))
+        print(traceback.format_exc())
+        return jsonify({'error': f"Unexpected error: {e}"}), 500
 
 @app.route('/', methods=['GET'])
 def index():
     return jsonify({"message": "Markdown Generator Backend is running!"})
+
+# --- User Registration, Login, and Profile with MySQL Database ---
+
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
+# JWT Configuration
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+jwt = JWTManager(app)
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email', '')
+        if not username or not password:
+            return jsonify({'error': 'Username and password required'}), 400
+
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT id FROM users WHERE username=%s", (username,))
+        if cur.fetchone():
+            cur.close()
+            return jsonify({'error': 'User already exists'}), 409
+
+        hashed_password = generate_password_hash(password)
+        cur.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)",
+                    (username, hashed_password, email))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'message': 'User registered successfully'}), 201
+    except Exception as e:
+        print("Registration error:", str(e))
+        import traceback; traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)  # <-- Use DictCursor
+    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cur.fetchone()
+    cur.close()
+
+    if user and check_password_hash(user['password'], password):
+        access_token = create_access_token(identity=username)
+        return jsonify(access_token=access_token), 200
+    return jsonify({'error': 'Invalid credentials'}), 401
+
+@app.route('/api/profile', methods=['GET', 'PUT'])
+@jwt_required()
+def profile():
+    username = get_jwt_identity()
+    cur = mysql.connection.cursor(MySQLdb.cursors.DictCursor)  # <-- Use DictCursor
+    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cur.fetchone()
+
+    if not user:
+        cur.close()
+        return jsonify({'error': 'User not found'}), 404
+
+    if request.method == 'GET':
+        cur.close()
+        return jsonify({'username': user['username'], 'email': user['email']})
+
+    if request.method == 'PUT':
+        data = request.get_json()
+        new_username = data.get('username', username)
+        email = data.get('email', user['email'])
+
+        # Prevent username change to an existing username
+        if new_username != username:
+            cur.execute("SELECT id FROM users WHERE username=%s", (new_username,))
+            if cur.fetchone():
+                cur.close()
+                return jsonify({'error': 'Username already exists'}), 409
+
+        cur.execute("UPDATE users SET username=%s, email=%s WHERE username=%s",
+                    (new_username, email, username))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'username': new_username, 'email': email})
+
+def gemini_summarize_text(text):
+    """
+    Uses Gemini model to summarize any long text into a concise paragraph.
+    """
+    try:
+        prompt = f"""
+        Write me a Formal Summary report of this text.
+        Text:
+        \"\"\"
+        {text}
+        \"\"\"
+        To know me:
+        - Director Financial
+        - Important Ratios (e.g., \tCurrent Ratio, \tDebt-to-Equity Ratio, \tNet Profit, \tGross Profit)
+        - Area of concerns (bad ratios)
+        - Auditor report concerns (don not pick concern from director's report and only provide concerns from auditor's report)
+        - Business performance
+        - Variance reasons
+        - Qualitative insights
+
+        in short and points wise,
+        thanks.
+        """
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
+        summary = response.text.strip()
+        return summary
+    except Exception as e:
+        print("Error generating summary:", str(e))
+        print(traceback.format_exc())
+        return "Summary generation failed."
+
+@app.route('/api/summarize-text', methods=['POST'])
+def summarize_text():
+    """
+    Summarize a long text using Gemini AI.
+    Expects JSON: { "text": "your long text here" }
+    Returns: { "summary": "..." }
+    """
+    data = request.get_json()
+    if not data or 'text' not in data:
+        return jsonify({'error': 'No text provided.'}), 400
+
+    long_text = data['text']
+    if not long_text.strip():
+        return jsonify({'error': 'Text is empty.'}), 400
+
+    summary = gemini_summarize_text(long_text)
+    return jsonify({'summary': summary}), 200
+
+@app.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    data = request.get_json()
+    user_email = None
+    if 'user' in session:
+        user_email = session['user'].get('email')
+    if not user_email:
+        user_email = data.get('user')
+    feedback_text = data.get('feedback', '').strip()
+
+    if not user_email or not feedback_text:
+        return jsonify({'error': 'User and feedback are required.'}), 400
+
+    try:
+        cur = mysql.connection.cursor()
+        cur.execute(
+            "INSERT INTO feedback (user_email, feedback) VALUES (%s, %s)",
+            (user_email, feedback_text)
+        )
+        mysql.connection.commit()
+        cur.close()
+    except Exception as e:
+        print("Feedback DB error:", str(e))
+        return jsonify({'error': 'Failed to save feedback.'}), 500
+
+    return jsonify({'message': 'Feedback submitted successfully.'}), 200
+
+@app.route('/api/summarize-markdown', methods=['POST'])
+def summarize_markdown():
+    """
+    Summarize markdown content in a very short, concise way.
+    Expects JSON: { "markdown": "..." }
+    Returns: { "summary": "..." }
+    """
+    data = request.get_json()
+    markdown = data.get('markdown', '')
+    if not markdown or not markdown.strip():
+        return jsonify({'error': 'No markdown content provided.'}), 400
+
+    try:
+        prompt = f"""
+        Summarize the following markdown content in 2-3 sentences, focusing only on the most important financial highlights and key points. Be extremely concise.
+
+        Markdown Content:
+        \"\"\"
+        {markdown}
+        \"\"\"
+        Respond with only the summary text, no formatting.
+        """
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
+        summary = response.text.strip()
+        return jsonify({'summary': summary}), 200
+    except Exception as e:
+        print("Error generating markdown summary:", str(e))
+        print(traceback.format_exc())
+        return jsonify({'error': 'Summary generation failed.'}), 500
+
+def ai_extract_ratios_json(markdown_content, ratio_formulas):
+    """
+    Uses Gemini AI to extract and calculate all possible ratios from markdown,
+    and returns a JSON object suitable for charting.
+    """
+    prompt = f"""
+You are a financial analyst. Carefully analyze the following financial report (in Markdown format) and do the following:
+
+Extract all available numerical data required for key financial ratios (especially ebit, ebitda, net sales, total assets, etc.) from the markdown content.
+Use ONLY the formulas provided below for all ratio calculations. Do NOT use any formula or definition not present in the list.
+For each ratio, attempt to calculate it for each year available (e.g., 2024, 2023).
+Respond ONLY in this JSON format (no extra text):
+
+{{
+  "Current Ratio": {{"2024": value, "2023": value}},
+  "Debt-to-Equity Ratio": {{"2024": value, "2023": value}},
+  ...
+}}
+
+If a ratio or year cannot be calculated, omit it from the JSON.
+Do not include explanations or extra text.
+
+Financial Ratio Formulas (use these exactly):
+{ratio_formulas}
+MARKDOWN Content:
+{markdown_content}
+    """
+
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config={
+                "temperature": 0.0,
+                "top_p": 1.0,
+                "top_k": 1,
+            }
+        )
+        if not response.parts:
+            return {}
+        # Extract JSON from response
+        json_start = response.text.find('{')
+        json_end = response.text.rfind('}')
+        if json_start == -1 or json_end == -1:
+            return {}
+        json_text = response.text[json_start:json_end + 1]
+        return json.loads(json_text)
+    except Exception as e:
+        print("AI ratio extraction error:", e)
+        return {}
+
+def extract_expenses_from_markdown(markdown):
+    """
+    Extracts all expenses for all years from markdown.
+    Returns: { year: { category: value, ... }, ... }
+    """
+    exp_regex = re.compile(r'Expenses\s*\((\d{4})\):\s*([^\n]+)', re.IGNORECASE)
+    result = {}
+    for match in exp_regex.finditer(markdown):
+        year = match.group(1)
+        cats = match.group(2).split(',')
+        result[year] = {}
+        for cat in cats:
+            parts = cat.split('=')
+            if len(parts) == 2:
+                name = parts[0].strip()
+                try:
+                    value = float(parts[1].strip())
+                    result[year][name] = value
+                except ValueError:
+                    continue
+    return result
+
+@app.route('/api/ai-ratios-graph', methods=['POST'])
+def ai_ratios_graph():
+    """
+    Use AI to extract ratios from markdown and return JSON for frontend charting.
+    Expects JSON: { "markdown": "..." }
+    Returns: { "ratios": ..., "expenses": ... }
+    """
+    data = request.get_json()
+    markdown = data.get('markdown', '')
+    if not markdown or not markdown.strip():
+        return jsonify({'error': 'No markdown content provided.'}), 400
+
+    ratios = ai_extract_ratios_json(markdown, RATIO_FORMULAS)
+    if not ratios:
+        return jsonify({'error': 'No ratios could be extracted from markdown.'}), 400
+
+    # Only keep ratios with at least 2 years for charting
+    filtered_ratios = {k: v for k, v in ratios.items() if len(v) >= 2}
+    if not filtered_ratios:
+        return jsonify({'error': 'No valid ratios with both years found in markdown.'}), 400
+
+    # Extract all expenses for all years
+    expenses = extract_expenses_from_markdown(markdown)
+
+    return jsonify({'ratios': filtered_ratios, 'expenses': expenses}), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5002, debug=True)

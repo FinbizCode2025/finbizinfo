@@ -2,8 +2,263 @@
 @tailwind components;
 @tailwind utilities;
 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+  text-decoration: none;
+  list-style: none;
+  text-align: left;
+  text-transform: none;
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+}
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+h1 {
+  font-size: 2rem;
+  font-weight: bold;
+}
+h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+h3 {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+h4 {
+  font-size: 1rem;
+  font-weight: bold;
+}
+h5 {
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+h6 {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+p {
+  margin: 0;
+  line-height: 1.5;
+  color: rgb(36, 36, 36);
+}
+a {
+  color: #0070f3;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+ul, ol {
+  margin: 0;
+  padding: 0;
+}
+ul {
+  list-style-type: disc;
+}
+ol {
+  list-style-type: decimal;
+}
+li {
+  margin: 0.5rem 0;
+}
+.foot {
+  color: rgb(184, 184, 184);
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
+button {
+  background-color: #0070f3;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #005bb5;
+}
+input, textarea {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+input:focus, textarea:focus {
+  border-color: #0070f3;
+  outline: none;
+}
+input[type="checkbox"], input[type="radio"] {
+  margin-right: 0.5rem;
+}
+input[type="checkbox"]:checked, input[type="radio"]:checked {
+  background-color: #0070f3;
+}
+input[type="checkbox"]:checked::before, input[type="radio"]:checked::before {
+  content: '✓';
+  color: white;
+}
+input[type="checkbox"]:checked::before {
+  background-color: #0070f3;
+}
+input[type="radio"]:checked::before {
+  background-color: #0070f3;
+}
+input[type="file"] {
+  border: none;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+input[type="file"]:focus {
+  border-color: #0070f3;
+  outline: none;
+}
+
 table, th, td {
   border: 1px solid #ccc;
   border-collapse: collapse;
   padding: 8px;
 }
+
+.custom-loader {
+  border: 4px solid #e0e7ef;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: custom-spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes custom-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.layer1 {
+    border: 1px dashed grey;
+    padding: 30px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.feedback {
+    display: none;
+    float: right;
+    border: 1px solid red;
+    border-radius: 20px;
+    text-align: center;
+    padding: 7px;
+}
+
+textarea {
+    width: 100%;
+    padding: 8px;
+}
+
+.feedback-submit-button {
+    border: black 2px solid;
+    background-color: royalblue;
+    border-radius: 5px;
+    padding: 7px;
+    margin: 15px;
+    color: white;
+}
+
+.response {
+    border-radius: 8px;
+    width: 100%;
+    text-align: left;
+    padding: 9px;
+}
+
+.financial_statement {
+    text-align: center;
+    margin: 10px;
+    padding: 10px;
+}
+
+.bot-message-markdown {
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.bot-message-markdown h3,
+.bot-message-markdown h4 {
+  color: #333;
+  margin-bottom: 6px;
+}
+
+.bot-message-markdown ul {
+  padding-left: 20px;
+  margin-bottom: 12px;
+}
+
+.bot-message-markdown p {
+  margin: 6px 0;
+}
+
+.bot-message-markdown code {
+  background: #eaeaea;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: Consolas, monospace;
+}
+
+/* Dark mode styles */
+.dark {
+  --bg-main: #18181b;
+  --bg-header: #232336;
+  --text-main: #f3f4f6;
+  --text-secondary: #a1a1aa;
+}
+
+.dark body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
+.dark header {
+  background: linear-gradient(to right, #232336, #18181b);
+  color: var(--text-main);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(24,24,27,0.7), 0 4px 6px -4px rgba(24,24,27,0.7);
+}
+
+.dark .hover\:bg-blue-500:hover {
+  background-color: #2563eb !important;
+}
+
+.dark .rounded-lg {
+  background-color: #232336;
+}
+
+.dark .text-2xl,
+.dark .font-semibold {
+  color: var(--text-main);
+}
+
+/* ...add more dark styles as needed for your components... */
+
