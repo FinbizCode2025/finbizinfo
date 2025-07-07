@@ -26,7 +26,7 @@ jobs:
             set -e
 
             echo "📥 Pulling latest code"
-            cd /var/www/finbizinfo
+            cd /var/www/finbizinfo/finbizinfo
             git pull origin main
 
             echo "⚙ Installing frontend dependencies"
