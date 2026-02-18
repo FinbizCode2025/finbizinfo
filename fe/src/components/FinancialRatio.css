@@ -1,0 +1,332 @@
+/* ============================================
+   Financial Ratio Component Styles
+   ============================================ */
+
+.layer1 {
+    border: 1px dashed grey;
+    padding: 30px;
+    text-align: center;
+    border-radius: 8px;
+}
+
+.feedback {
+    display: none;
+    float: right;
+    border: 1px solid red;
+    border-radius: 20px;
+    text-align: center;
+    padding: 7px;
+}
+
+textarea {
+    width: 100%;
+    padding: 8px;
+}
+
+.feedback-submit-button {
+    border: black 2px solid;
+    background-color: royalblue;
+    border-radius: 5px;
+    padding: 7px;
+    margin: 15px;
+    color: white;
+}
+
+/* ============================================
+   Main Container Styling
+   ============================================ */
+
+.financial_statement {
+    text-align: center;
+    margin: 20px 0;
+    padding: 25px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+}
+
+.financial_statement button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.financial_statement button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.financial_statement button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.financial_statement button .loading-ring {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Response Section Styling
+   ============================================ */
+
+.response {
+    border-radius: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.response .message {
+    background: white;
+    border-left: 5px solid;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease;
+}
+
+.response .message.bot-message {
+    border-left-color: #667eea;
+    background: #f8f9fc;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   Markdown Content Styling
+   ============================================ */
+
+.bot-message-markdown {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Headings */
+.bot-message-markdown h1,
+.bot-message-markdown h2,
+.bot-message-markdown h3,
+.bot-message-markdown h4,
+.bot-message-markdown h5,
+.bot-message-markdown h6 {
+    margin: 20px 0 12px 0;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.bot-message-markdown h1 {
+    font-size: 28px;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 10px;
+    color: #667eea;
+}
+
+.bot-message-markdown h2 {
+    font-size: 24px;
+    color: #764ba2;
+    margin-top: 24px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e0e7ff;
+}
+
+.bot-message-markdown h3 {
+    font-size: 20px;
+    color: #667eea;
+    margin-top: 18px;
+}
+
+.bot-message-markdown h4,
+.bot-message-markdown h5,
+.bot-message-markdown h6 {
+    font-size: 16px;
+    color: #555;
+}
+
+/* Paragraphs */
+.bot-message-markdown p {
+    margin: 12px 0;
+    color: #444;
+}
+
+.bot-message-markdown strong {
+    color: #2c3e50;
+    font-weight: 700;
+}
+
+/* Lists */
+.bot-message-markdown ul,
+.bot-message-markdown ol {
+    padding-left: 24px;
+    margin: 12px 0;
+}
+
+.bot-message-markdown li {
+    margin: 8px 0;
+    color: #444;
+}
+
+.bot-message-markdown ul li::marker {
+    color: #667eea;
+    font-weight: bold;
+}
+
+/* Code */
+.bot-message-markdown code {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e0e7ff 100%);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', Consolas, monospace;
+    color: #764ba2;
+    font-size: 0.95em;
+}
+
+.bot-message-markdown pre {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-family: 'Courier New', Consolas, monospace;
+}
+
+.bot-message-markdown pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+}
+
+/* ============================================
+   Table Styling
+   ============================================ */
+
+.bot-message-markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.bot-message-markdown th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    border: none;
+}
+
+.bot-message-markdown td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e0e7ff;
+    color: #444;
+}
+
+.bot-message-markdown tr:hover {
+    background-color: #f8f9fc;
+}
+
+.bot-message-markdown tr:last-child td {
+    border-bottom: none;
+}
+
+/* ============================================
+   Status/Assessment Styling
+   ============================================ */
+
+.bot-message-markdown strong:has(+ em) {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #f0f4ff;
+    color: #667eea;
+    font-weight: 700;
+}
+
+/* Highlight checks and alerts */
+.bot-message-markdown p:has(em:contains("Strong")) {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.bot-message-markdown p:has(em:contains("Weak")) {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.bot-message-markdown p:has(em:contains("Moderate")) {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .financial_statement {
+        margin: 10px;
+        padding: 15px;
+    }
+
+    .financial_statement button {
+        padding: 10px 20px;
+        font-size: 14px;
+        width: 100%;
+    }
+
+    .bot-message-markdown {
+        padding: 15px;
+    }
+
+    .bot-message-markdown h2 {
+        font-size: 20px;
+    }
+
+    .bot-message-markdown h3 {
+        font-size: 18px;
+    }
+
+    .bot-message-markdown table {
+        font-size: 14px;
+    }
+
+    .bot-message-markdown th,
+    .bot-message-markdown td {
+        padding: 10px 12px;
+    }
+}

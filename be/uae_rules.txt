@@ -1,0 +1,114 @@
+1. Statement of Compliance with IFRS
+"The financial statements have been prepared in accordance with International Financial Reporting Standards (IFRS) as issued by the International Accounting Standards Board (IASB). The Company has adopted all applicable IFRS standards and interpretations, and has consistently applied its significant accounting policies during the period."
+________________________________________
+2. Disclosure on Significant Accounting Policies
+"The Company has established comprehensive Significant Accounting Policies covering recognition, measurement, presentation and disclosure requirements in accordance with IFRS including, but not limited to, IFRS 15 – Revenue, IFRS 9 – Financial Instruments, IFRS 16 – Leases, IAS 2 – Inventories, IAS 16 – Property, Plant & Equipment, IAS 12 – Income Taxes, IAS 19 – Employee Benefits, IAS 37 – Provisions and Contingencies, and all other relevant standards. These policies have been consistently applied throughout the reporting period."
+________________________________________
+3. Confirmation of Compliance
+"The Company confirms that all Significant Accounting Policies have been properly documented, consistently applied, and accurately reflected in these financial statements. Any accounting estimates, judgments, or assumptions have been made in accordance with IFRS and are disclosed in the relevant notes."
+________________________________________
+4. Full Disclosures Provided
+"The financial statements include all necessary disclosures as required under IFRS. This includes detailed notes relating to revenue recognition, financial instruments, fair value measurements, leases, income taxes, provisions, contingencies, related party transactions, segment information, capital management, and other applicable areas. Management confirms that the disclosures are complete, transparent, and provide sufficient information for users to understand the financial position and performance of the Company."
+________________________________________
+5. Consistency & Transparency
+"All accounting policies and disclosures have been prepared with due care, transparency, and consistency. There were no material changes in accounting policies during the reporting period, and no departures from IFRS requirements."
+________________________________________
+ 
+6. Compliance with Presentation and Disclosure Requirements (IAS 1)
+"The Company has prepared its financial statements in accordance with IAS 1 Presentation of Financial Statements, ensuring that all required comparative information, significant judgments, and key estimation uncertainties are disclosed clearly in the notes."
+3.1 Revenue Recognition (IFRS 15)
+Revenue is recognised when control of goods or services is transferred to the customer, measured at the transaction price.
+Key policies:
+a) Sale of Goods
+•	Revenue recognised at the point in time when control passes (delivery/despatch).
+•	Variable consideration (discounts, rebates) adjusted.
+b) Rendering of Services
+•	Revenue recognised over time, using stage of completion method.
+c) Contract Liabilities
+Advance payments are recorded as contract liabilities until performance obligations are satisfied.
+________________________________________
+3.2 Property, Plant and Equipment (IAS 16)
+PPE is measured initially at cost, then at cost less accumulated depreciation and impairment.
+•	Depreciation method: Straight-line.
+•	Useful lives:
+o	Buildings: [XX] years
+o	Plant & machinery: [XX] years
+o	Furniture & fixtures: [XX] years
+o	Vehicles: [XX] years
+Major replacement/inspection costs are capitalized.
+________________________________________
+3.3 Intangible Assets (IAS 38)
+Recognised when controlled by the Company and future economic benefits are probable.
+•	Amortisation: Straight-line
+•	Useful life: [XX years]
+•	Indefinite-lived assets tested annually for impairment.
+________________________________________
+3.4 Leases (IFRS 16)
+a) Lessee accounting
+The Company recognises:
+•	A Right-of-use (ROU) asset
+•	A Lease liability (PV of future lease payments)
+Short-term (<12 months) and low-value leases are expensed.
+b) Lessor accounting
+Classified as operating or finance leases based on risk and rewards.
+________________________________________
+3.5 Financial Instruments (IFRS 9)
+a) Financial Assets
+Classification:
+•	Amortised cost
+•	FVOCI
+•	FVTPL
+b) Impairment
+Expected credit loss (ECL) model is applied.
+c) Financial Liabilities
+Measured at amortised cost unless designated at FVTPL.
+________________________________________
+3.6 Inventories (IAS 2)
+Inventories are measured at lower of cost or net realisable value.
+Cost formula: FIFO / Weighted Average (choose one).
+________________________________________
+3.7 Impairment of Non-Financial Assets (IAS 36)
+Assets are reviewed annually for impairment indicators.
+Recoverable amount = higher of:
+•	Value in use
+•	Fair value less costs of disposal.
+________________________________________
+3.8 Income Tax (IAS 12)
+•	Current tax: based on taxable profits.
+•	Deferred tax: Temporary differences using the liability method.
+•	Deferred tax assets recognised only when future taxable profits are probable.
+________________________________________
+3.9 Employee Benefits (IAS 19)
+a) Short-term benefits
+Recognised when the employee renders service.
+b) Defined Contribution Plan
+(company contributes fixed amounts—expense recognised as incurred)
+c) Defined Benefit Plan (if applicable)
+•	Obligation measured using actuarial valuation (Projected Unit Credit Method).
+________________________________________
+3.10 Provisions & Contingencies (IAS 37)
+A provision is recognised when:
+•	A present obligation exists
+•	Outflow probable
+•	Amount can be estimated reliably.
+Contingent liabilities are disclosed, not recognised.
+________________________________________
+3.11 Cash & Cash Equivalents (IAS 7)
+Cash on hand, bank balances, and short-term investments with maturity < 3 months.
+________________________________________
+3.12 Foreign Currency (IAS 21)
+Transactions translated at spot rate on transaction date.
+Monetary items retranslated at closing rate; differences to P/L.
+________________________________________
+3.13 Government Grants (IAS 20)
+Recognised when reasonable assurance exists that:
+•	Company will comply with conditions
+•	Grants will be received
+Asset-related grants presented as deferred income.
+________________________________________
+3.14 Business Combinations (IFRS 3) (if applicable)
+Acquisition method used.
+Goodwill = Purchase consideration – Net identifiable assets.
+Goodwill tested annually for impairment.
+
+

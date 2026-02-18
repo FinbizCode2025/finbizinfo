@@ -1,0 +1,17 @@
+Statement of Compliance with Indian Accounting Standards (Ind AS)
+
+1. The financial statements have been prepared in accordance with the Indian Accounting Standards (Ind AS) as prescribed under the Companies Act and applicable regulations.
+
+2. Significant Accounting Policies
+- Revenue recognition in accordance with Ind AS 115.
+- Measurement and recognition of financial instruments as per Ind AS 109.
+- Leases in accordance with Ind AS 116.
+- Inventories in accordance with Ind AS 2.
+
+3. Income Tax
+- Current and deferred tax accounted for as per Ind AS 12.
+
+4. Other Disclosures
+- Related party transactions, segment reporting, and provisions are disclosed in line with statutory requirements.
+
+(Placeholder rules for India - replace with detailed policy text as required.)
