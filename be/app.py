@@ -2126,12 +2126,6 @@ def upload_pdf():
                           "assets": {{
                              "non_current_assets": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ],
                              "current_assets": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ]
-                          }},
-                          "p_and_l": {{
-                             "revenue": {{ "current": X, "previous": X }},
-                             "net_profit": {{ "current": X, "previous": X }},
-                             "ebitda": {{ "current": X, "previous": X }},
-                             "interest_expense": {{ "current": X, "previous": X }}
                           }}
                         }}
                         
@@ -2224,12 +2218,6 @@ def upload_pdf():
                         "current_assets": [
                           {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
                         ]
-                      }},
-                      "p_and_l": {{
-                        "revenue": {{ "current": X, "previous": X }},
-                        "net_profit": {{ "current": X, "previous": X }},
-                        "ebitda": {{ "current": X, "previous": X }},
-                        "interest_expense": {{ "current": X, "previous": X }}
                       }}
                     }}
                     

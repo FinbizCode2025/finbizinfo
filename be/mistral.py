@@ -28,14 +28,14 @@ DPI = 300
 # ----------------------------------------
 
 PROMPT = """
-Extract the balance sheet and profit & loss for the latest financial year only.
+Extract the balance sheet for the latest and previous financial years.
 The PDF typically contains multiple years (e.g., 2024 and 2023).
-CRITICAL RULE: Always use the LEFT-HAND column for the latest year numbers. Ignore all other columns for previous years.
+CRITICAL RULE: Extract data for BOTH the LATEST financial year AND the PREVIOUS financial year if available.
 
 PDF Layout Warning:
 In many Indian financial reports (like Dabur India Limited), the layout is:
 Particulars | Note | 31 March 2024 (Latest) | 31 March 2023 (Previous)
-You MUST skip the 'Note' column and pick the numbers from the '31 March 2024' column.
+You MUST skip the 'Note' column and pick the numbers from the relevant year columns.
 
 Output the data in EXACTLY this JSON format (following demo.json style):
 {
@@ -65,12 +65,6 @@ Output the data in EXACTLY this JSON format (following demo.json style):
     "current_assets": [
       { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
     ]
-  },
-  "p_and_l": {
-    "revenue": { "current": X, "previous": X },
-    "net_profit": { "current": X, "previous": X },
-    "ebitda": { "current": X, "previous": X },
-    "interest_expense": { "current": X, "previous": X }
   }
 }
 

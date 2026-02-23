@@ -67,12 +67,6 @@ def extract_financials(text_content):
         "current_assets": [
           {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
         ]
-      }},
-      "p_and_l": {{
-        "revenue": {{ "current": X, "previous": X }},
-        "net_profit": {{ "current": X, "previous": X }},
-        "ebitda": {{ "current": X, "previous": X }},
-        "interest_expense": {{ "current": X, "previous": X }}
       }}
     }}
     
