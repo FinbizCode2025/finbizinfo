@@ -47,4 +47,13 @@ if __name__ == '__main__':
         sys.exit(3)
 
     ratios = calculate_financial_ratios_from_text(text)
+    
+    # Print balance sheet table (extracted numbers) as JSON
+    print("\n" + "="*50)
+    print("📊 BALANCE SHEET TABLE JSON (EXTRACTED NUMBERS)")
+    print("="*50)
+    print(json.dumps(ratios.get('_extracted_numbers', {}), indent=2))
+    print("="*50 + "\n")
+    
+    print("📈 Calculated Ratios:")
     print(json.dumps(ratios, indent=2))

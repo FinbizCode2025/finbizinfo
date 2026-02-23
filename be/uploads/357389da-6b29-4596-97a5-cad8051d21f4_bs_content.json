@@ -1,0 +1,461 @@
+{
+  "session_id": "357389da-6b29-4596-97a5-cad8051d21f4",
+  "source": "pdf_extraction",
+  "version": "2.0-TableAI",
+  "timestamp": "2026-02-19T13:18:25.457651",
+  "identified_pages": [
+    0,
+    7
+  ],
+  "table_rows": [
+    {
+      "page_number": 1,
+      "rows": [
+        {
+          "Particulars": "Note",
+          "Col_1": "31st March, 2023",
+          "Col_2": "31st March, 2022",
+          "_numbers": [
+            312023.0,
+            312022.0
+          ]
+        },
+        {
+          "Particulars": "(a)\tProperty, Plant and Equipment",
+          "Col_1": "3A",
+          "Col_2": "20491.32",
+          "Col_3": "19559.15",
+          "_numbers": [
+            3.0,
+            20491.32,
+            19559.15
+          ]
+        },
+        {
+          "Particulars": "(b)\tCapital work-in-progress",
+          "Col_1": "3B",
+          "Col_2": "1681.47",
+          "Col_3": "2442.34",
+          "_numbers": [
+            3.0,
+            1681.47,
+            2442.34
+          ]
+        },
+        {
+          "Particulars": "(c)\t Investment Property",
+          "Col_1": "3C",
+          "Col_2": "352.26",
+          "Col_3": "364.20",
+          "_numbers": [
+            3.0,
+            352.26,
+            364.2
+          ]
+        },
+        {
+          "Particulars": "(d)\tGoodwill",
+          "Col_1": "3D",
+          "Col_2": "577.20",
+          "Col_3": "577.20",
+          "_numbers": [
+            3.0,
+            577.2,
+            577.2
+          ]
+        },
+        {
+          "Particulars": "(e)\tOther Intangible assets",
+          "Col_1": "3E",
+          "Col_2": "2037.42",
+          "Col_3": "2007.22",
+          "_numbers": [
+            3.0,
+            2037.42,
+            2007.22
+          ]
+        },
+        {
+          "Particulars": "(f)\t Other Intangible assets under development",
+          "Col_1": "3F",
+          "Col_2": "15.13",
+          "Col_3": "23.84",
+          "_numbers": [
+            3.0,
+            15.13,
+            23.84
+          ]
+        },
+        {
+          "Particulars": "(g)\tRight of use assets",
+          "Col_1": "3G",
+          "Col_2": "715.91",
+          "Col_3": "712.84",
+          "_numbers": [
+            3.0,
+            715.91,
+            712.84
+          ]
+        },
+        {
+          "Particulars": "(i)\t Investments",
+          "Col_1": "4",
+          "Col_2": "16363.55",
+          "Col_3": "15657.32",
+          "_numbers": [
+            4.0,
+            16363.55,
+            15657.32
+          ]
+        },
+        {
+          "Particulars": "(ii)\t Loans",
+          "Col_1": "5",
+          "Col_2": "4.07",
+          "Col_3": "5.06",
+          "_numbers": [
+            5.0,
+            4.07,
+            5.06
+          ]
+        },
+        {
+          "Particulars": "(iii)\tOthers",
+          "Col_1": "6",
+          "Col_2": "3608.23  19975.85",
+          "Col_3": "1572.40  17234.78",
+          "_numbers": [
+            6.0,
+            3608.23,
+            1572.4
+          ]
+        },
+        {
+          "Particulars": "(i)\t Other non-current assets",
+          "Col_1": "7",
+          "Col_2": "1211.74  47058.30",
+          "Col_3": "1228.92  44150.49",
+          "_numbers": [
+            7.0,
+            1211.74,
+            1228.92
+          ]
+        },
+        {
+          "Particulars": "(a)\tInventories",
+          "Col_1": "8",
+          "Col_2": "10593.90",
+          "Col_3": "9997.77",
+          "_numbers": [
+            8.0,
+            10593.9,
+            9997.77
+          ]
+        },
+        {
+          "Particulars": "(i)\t Investments",
+          "Col_1": "9",
+          "Col_2": "16357.07",
+          "Col_3": "11624.95",
+          "_numbers": [
+            9.0,
+            16357.07,
+            11624.95
+          ]
+        },
+        {
+          "Particulars": "(ii)\t Trade receivables",
+          "Col_1": "10",
+          "Col_2": "2321.33",
+          "Col_3": "1952.50",
+          "_numbers": [
+            10.0,
+            2321.33,
+            1952.5
+          ]
+        },
+        {
+          "Particulars": "(iii)\tCash and cash equivalents",
+          "Col_1": "11",
+          "Col_2": "206.88",
+          "Col_3": "184.97",
+          "_numbers": [
+            11.0,
+            206.88,
+            184.97
+          ]
+        },
+        {
+          "Particulars": "(iv)\tOther Bank Balances",
+          "Col_1": "12",
+          "Col_2": "3624.38",
+          "Col_3": "3692.97",
+          "_numbers": [
+            12.0,
+            3624.38,
+            3692.97
+          ]
+        },
+        {
+          "Particulars": "(v)\t Loans",
+          "Col_1": "5",
+          "Col_2": "5.95",
+          "Col_3": "5.73",
+          "_numbers": [
+            5.0,
+            5.95,
+            5.73
+          ]
+        },
+        {
+          "Particulars": "(vi)\tOthers",
+          "Col_1": "6",
+          "Col_2": "705.84  23221.45",
+          "Col_3": "2287.97  19749.09",
+          "_numbers": [
+            6.0,
+            705.84,
+            2287.97
+          ]
+        },
+        {
+          "Particulars": "(c)\t Other current assets",
+          "Col_1": "7",
+          "Col_2": "1388.09  35203.44",
+          "Col_3": "1195.15  30942.01",
+          "_numbers": [
+            7.0,
+            1388.09,
+            1195.15
+          ]
+        },
+        {
+          "Particulars": "TOTAL ASSETS",
+          "Col_1": "82261.74",
+          "Col_2": "75092.50",
+          "_numbers": [
+            82261.74,
+            75092.5
+          ]
+        },
+        {
+          "Particulars": "(a)\tEquity Share capital",
+          "Col_1": "13",
+          "Col_2": "1242.80",
+          "Col_3": "1232.33",
+          "_numbers": [
+            13.0,
+            1242.8,
+            1232.33
+          ]
+        },
+        {
+          "Particulars": "(b)\tOther Equity",
+          "Col_1": "66351.00  67593.80",
+          "Col_2": "60167.24  61399.57",
+          "_numbers": [
+            66351.0,
+            60167.24
+          ]
+        },
+        {
+          "Particulars": "(i)\t Borrowings",
+          "Col_1": "14",
+          "Col_2": "3.28",
+          "Col_3": "4.54",
+          "_numbers": [
+            14.0,
+            3.28,
+            4.54
+          ]
+        },
+        {
+          "Particulars": "(ii)\t Lease Liabilities",
+          "Col_1": "15",
+          "Col_2": "273.59",
+          "Col_3": "259.79",
+          "_numbers": [
+            15.0,
+            273.59,
+            259.79
+          ]
+        },
+        {
+          "Particulars": "(iii) Other financial liabilities",
+          "Col_1": "16",
+          "Col_2": "152.49",
+          "Col_3": "429.36",
+          "Col_4": "96.50",
+          "Col_5": "360.83",
+          "_numbers": [
+            16.0,
+            152.49,
+            429.36,
+            96.5,
+            360.83
+          ]
+        },
+        {
+          "Particulars": "(b)\tProvisions",
+          "Col_1": "17",
+          "Col_2": "201.83",
+          "Col_3": "186.87",
+          "_numbers": [
+            17.0,
+            201.83,
+            186.87
+          ]
+        },
+        {
+          "Particulars": "(c)\t Deferred tax liabilities (Net)",
+          "Col_1": "18",
+          "Col_2": "1621.13",
+          "Col_3": "2252.32",
+          "Col_4": "1667.14",
+          "Col_5": "2214.84",
+          "_numbers": [
+            18.0,
+            1621.13,
+            2252.32,
+            1667.14,
+            2214.84
+          ]
+        },
+        {
+          "Particulars": "(i)\t Borrowings",
+          "Col_1": "14",
+          "Col_2": "1.26",
+          "Col_3": "0.74",
+          "_numbers": [
+            14.0,
+            1.26,
+            0.74
+          ]
+        },
+        {
+          "Particulars": "and small enterprises",
+          "Col_1": "137.50",
+          "Col_2": "100.96",
+          "_numbers": [
+            137.5,
+            100.96
+          ]
+        },
+        {
+          "Particulars": "micro enterprises and small enterprises",
+          "Col_1": "4213.76",
+          "Col_2": "4122.44",
+          "_numbers": [
+            4213.76,
+            4122.44
+          ]
+        },
+        {
+          "Particulars": "(iii)\tLease Liabilities",
+          "Col_1": "15",
+          "Col_2": "46.54",
+          "Col_3": "46.09",
+          "_numbers": [
+            15.0,
+            46.54,
+            46.09
+          ]
+        },
+        {
+          "Particulars": "(iv) Other financial liabilities",
+          "Col_1": "16",
+          "Col_2": "1730.68",
+          "Col_3": "6129.74",
+          "Col_4": "1503.59",
+          "Col_5": "5773.82",
+          "_numbers": [
+            16.0,
+            1730.68,
+            6129.74,
+            1503.59,
+            5773.82
+          ]
+        },
+        {
+          "Particulars": "(b)\tOther current liabilities",
+          "Col_1": "19",
+          "Col_2": "5446.16",
+          "Col_3": "5097.28",
+          "_numbers": [
+            19.0,
+            5446.16,
+            5097.28
+          ]
+        },
+        {
+          "Particulars": "(c)\t Provisions",
+          "Col_1": "17",
+          "Col_2": "63.59",
+          "Col_3": "55.60",
+          "_numbers": [
+            17.0,
+            63.59,
+            55.6
+          ]
+        },
+        {
+          "Particulars": "(d)\tCurrent Tax Liabilities (Net)",
+          "Col_1": "20",
+          "Col_2": "776.13  12415.62",
+          "Col_3": "551.39  11478.09",
+          "_numbers": [
+            20.0,
+            776.13,
+            551.39
+          ]
+        },
+        {
+          "Particulars": "TOTAL EQUITY AND LIABILITIES",
+          "Col_1": "82261.74",
+          "Col_2": "75092.50",
+          "_numbers": [
+            82261.74,
+            75092.5
+          ]
+        },
+        {
+          "Particulars": "Frankfurt, May 18, 2023",
+          "Col_1": "Kolkata, May 18, 2023",
+          "_numbers": [
+            182023.0
+          ]
+        },
+        {
+          "Particulars": "146",
+          "Col_1": "ITC Limited",
+          "Col_2": "REPORT AND ACCOUNTS 2023",
+          "_numbers": [
+            2023.0
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 8,
+      "rows": [
+        {
+          "Particulars": "identifiable are capitalised at cost. Research expenditure is",
+          "Col_1": "Schedule II of the Companies Act, 2013. Freehold land and",
+          "_numbers": [
+            2013.0
+          ]
+        },
+        {
+          "Particulars": "ITC Limited",
+          "Col_1": "REPORT AND ACCOUNTS 2023",
+          "Col_2": "153",
+          "_numbers": [
+            2023.0,
+            153.0
+          ]
+        }
+      ]
+    }
+  ],
+  "content": "\n--- Page 1 ---\n146\nREPORT AND ACCOUNTS 2023\nITC Limited\nBalance Sheet as at 31st March, 2023\nNote\nAs at\n31st March, 2023\n(` in Crores)\nAs at\n31st March, 2022\n(` in Crores)\nASSETS \nNon-current assets \n\t\n(a)\tProperty, Plant and Equipment\n3A\n 20491.32 \n 19559.15 \n\t\n(b)\tCapital work-in-progress\n3B\n 1681.47 \n 2442.34 \n\t\n(c)\t Investment Property\n3C\n 352.26 \n 364.20 \n\t\n(d)\tGoodwill\n3D\n 577.20 \n 577.20 \n\t\n(e)\tOther Intangible assets\n3E\n 2037.42 \n 2007.22 \n\t\n(f)\t Other Intangible assets under development\n3F\n 15.13 \n 23.84 \n\t\n(g)\tRight of use assets\n3G\n 715.91 \n 712.84 \n\t\n(h)\tFinancial Assets\n\t\n\t\n(i)\t Investments\n4\n 16363.55 \n 15657.32 \n\t\n\t\n(ii)\t Loans\n5\n 4.07 \n 5.06 \n\t\n\t\n(iii)\tOthers\n6\n 3608.23  19975.85 \n 1572.40  17234.78 \n\t\n(i)\t Other non-current assets\n7\n 1211.74  47058.30 \n 1228.92  44150.49 \nCurrent assets \n\t\n(a)\tInventories\n8\n 10593.90 \n 9997.77 \n\t\n(b)\tFinancial Assets\n\t\n\t\n(i)\t Investments \n9\n 16357.07 \n 11624.95 \n\t\n\t\n(ii)\t Trade receivables \n10\n 2321.33 \n 1952.50 \n\t\n\t\n(iii)\tCash and cash equivalents \n11\n 206.88 \n 184.97 \n\t\n\t\n(iv)\tOther Bank Balances \n12\n 3624.38 \n 3692.97 \n\t\n\t\n(v)\t Loans \n5\n 5.95 \n 5.73 \n\t\n\t\n(vi)\tOthers \n6\n 705.84  23221.45 \n 2287.97  19749.09 \n\t\n(c)\t Other current assets\n7\n 1388.09  35203.44 \n 1195.15  30942.01 \nTOTAL ASSETS \n 82261.74 \n 75092.50 \nEQUITY AND LIABILITIES \nEquity \n\t\n(a)\tEquity Share capital\n13\n 1242.80 \n 1232.33 \n\t\n(b)\tOther Equity\n 66351.00  67593.80 \n 60167.24  61399.57 \nLiabilities \nNon-current liabilities \n\t\n(a)\tFinancial Liabilities\n\t\n\t\n(i)\t Borrowings\n14\n 3.28 \n 4.54 \n\t\n\t\n(ii)\t Lease Liabilities\n15\n 273.59 \n 259.79 \n \n \n(iii) Other financial liabilities\n16\n 152.49 \n 429.36 \n 96.50 \n 360.83 \n\t\n(b)\tProvisions\n17\n 201.83 \n 186.87 \n\t\n(c)\t Deferred tax liabilities (Net)\n18\n 1621.13 \n 2252.32 \n 1667.14 \n 2214.84 \nCurrent liabilities \n\t\n(a)\tFinancial Liabilities\n\t\n\t\n(i)\t Borrowings \n14\n 1.26 \n 0.74 \n\t\n\t\n(ii)\t Trade payables \n\t\n\t\n\t\nTotal outstanding dues of micro enterprises \t\t\n\t\n\t\n\t\nand small enterprises\n 137.50 \n 100.96 \n\t\n\t\n\t\nTotal outstanding dues of creditors other than \t\n\t\n\t\n\t\nmicro enterprises and small enterprises\n 4213.76 \n 4122.44 \n\t\n\t\n(iii)\tLease Liabilities \n15\n 46.54 \n 46.09 \n \n \n(iv) Other financial liabilities \n16\n 1730.68 \n 6129.74 \n 1503.59 \n 5773.82 \n\t\n(b)\tOther current liabilities\n19\n 5446.16 \n 5097.28 \n\t\n(c)\t Provisions\n17\n 63.59 \n 55.60 \n\t\n(d)\tCurrent Tax Liabilities (Net)\n20\n 776.13  12415.62 \n 551.39  11478.09 \nTOTAL EQUITY AND LIABILITIES \n 82261.74 \n 75092.50\nThe accompanying notes 1 to 30 are an integral part of the Financial Statements.\nIn terms of our report attached\nFor S R B C & CO LLP\nChartered Accountants\nFirm Registration Number: 324982E / E300003\nArvind Sethi\nPartner\nFrankfurt, May 18, 2023\nS. PURI \b\nChairman & Managing Director\nS. DUTTA\b\n Director & Chief Financial Officer\nR. K. SINGHI\b\nCompany Secretary\nOn behalf of the Board\nKolkata, May 18, 2023\n\n--- Page 8 ---\nREPORT AND ACCOUNTS 2023 153\nITC Limited\n1. Significant Accounting Policies (Contd.)\nAssets held under finance leases are depreciated over their \nexpected useful lives on the same basis as owned assets \nor, where shorter, the term of the relevant lease.\nProperty, plant and equipment’s residual values and useful \nlives are reviewed at each Balance Sheet date and changes, \nif any, are treated as changes in accounting estimate. \nIntangible Assets\nIntangible Assets that the Company controls and from \nwhich it expects future economic benefits are capitalised \nupon acquisition and measured initially: \na.\t \u0007for assets acquired in a business combination, at fair \nvalue on the date of acquisition. \nb.\t \u0007for separately acquired assets, at cost comprising \nthe purchase price (including import duties and \nnon-refundable taxes) and directly attributable costs to \nprepare the asset for its intended use.\nInternally generated assets for which the cost is clearly \nidentifiable are capitalised at cost. Research expenditure is \nrecognised as an expense when it is incurred. Development \ncosts are capitalised only after the technical and commercial \nfeasibility of the asset for sale or use has been established. \nThereafter, all directly attributable expenditure incurred to \nprepare the asset for its intended use are recognised as the \ncost of such assets. Internally generated brands, websites \nand customer lists are not recognised as intangible assets. \nThe carrying value of intangible assets includes deemed \ncost which represents the carrying value of intangible \nassets recognised as at 1st April, 2015 measured as per \nthe previous GAAP.\nThe useful life of an intangible asset is considered finite \nwhere the rights to such assets are limited to a specified \nperiod of time by contract or law (e.g. patents, licences, \ntrademarks, franchise and servicing rights) or the likelihood \nof technical, technological obsolescence (e.g. computer \nsoftware, design, prototypes) or commercial obsolescence \n(e.g. lesser known brands are those to which adequate \nmarketing support may not be provided). If, there are no \nsuch limitations, the useful life is taken to be indefinite. \nIntangible assets that have finite lives are amortized over \ntheir estimated useful lives by the straight line method \nunless it is practical to reliably determine the pattern of \nbenefits arising from the asset. An intangible asset with an \nindefinite useful life is not amortized.\nAll intangible assets are tested for impairment. Amortization \nexpenses and impairment losses and reversal of impairment \nlosses are taken to the Statement of Profit and Loss. Thus, \nafter initial recognition, an intangible asset is carried at \nits cost less accumulated amortization and / or impairment \nlosses. \nThe useful lives of intangible assets are reviewed annually to \ndetermine if a reset of such useful life is required for assets \nwith finite lives and to confirm that business circumstances \ncontinue to support an indefinite useful life assessment for \nassets so classified. Based on such review, the useful life \nmay change or the useful life assessment may change from \nindefinite to finite. The impact of such changes is accounted \nfor as a change in accounting estimate. \nInvestment Property\nProperties that are held for long-term rental yields and / or \nfor capital appreciation are classified as investment \nproperties. Investment properties are stated at cost of \nacquisition or construction less accumulated depreciation \nand impairment, if any. Depreciation is recognised using \nthe straight line method so as to amortise the cost of \ninvestment properties over their useful lives as specified in \nSchedule II of the Companies Act, 2013. Freehold land and \nproperties under construction are not depreciated. \nTransfers to, or from, investment properties are made at \nthe carrying amount when and only when there is a change \nin use.\nAn item of investment property is derecognised upon \ndisposal or when no future economic benefits are expected \nto arise from the continued use of asset. Any gain or loss \narising on the disposal or retirement of an item of investment \nproperty is determined as the difference between the sales \nproceeds and the carrying amount of the property and is \nrecognised in the Statement of Profit and Loss.\nIncome received from investment property is recognised \nin the Statement of Profit and Loss on a straight line basis \nover the term of the lease.\nImpairment of Assets\nImpairment loss, if any, is provided to the extent, the \ncarrying amount of assets or cash generating units exceed \ntheir recoverable amount.\nRecoverable amount is higher of an asset’s net selling \nprice and its value in use. Value in use is the present value \nof estimated future cash flows expected to arise from the \ncontinuing use of an asset or cash generating unit and from \nits disposal at the end of its useful life. \nImpairment losses recognised in prior years are reversed \nwhen there is an indication that the impairment losses \nrecognised no longer exist or have decreased. Such \nreversals are recognised as an increase in carrying \namounts of assets to the extent that it does not exceed the \nNotes to the Financial Statements\n"
+}

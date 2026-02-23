@@ -5,10 +5,8 @@ import uuid
 # pytesseract removed — using GLM OCR (Ollama) instead
 import tempfile
 from werkzeug.utils import secure_filename
-import fitz
-import pandas as pd
-import cv2
-import re
+import fitz # PyMuPDF
+import datetime
 import json
 from dotenv import load_dotenv
 # Load environment variables early
@@ -19,8 +17,10 @@ from financial_analyzer import FinancialAnalyzer
 from session_store import SessionStore
 from tavily_client import search_company
 from mistral import extract_balance_sheet, ocr_pdf, run_ocr, process_pdf, Mistral, API_KEY as MISTRAL_API_KEY
-from kimi_client import extract_financials_with_kimi
+from local_llm_client import extract_financials, redraft_json
+from advanced_pdf_service import AdvancedPDFService
 import logging
+import re
 
 # Configure basic logger to stdout
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -42,6 +42,9 @@ SESSIONS_FOLDER = os.path.join(UPLOAD_FOLDER, "sessions")
 os.makedirs(SESSIONS_FOLDER, exist_ok=True)
 
 # Tesseract removed — GLM OCR will be used exclusively for OCR tasks
+
+MOONSHOT_API_KEY = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+KIMI_BASE_URL = "https://api.moonshot.ai/v1" # Switched to .ai base URL for international access
 
 pdf_stores = {} 
 
@@ -665,24 +668,31 @@ def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data
     - Market Ratios (when available)
     """
     try:
+        import re
         print(f"DEBUG calculate_financial_ratios: Received P&L data: {profit_loss_data is not None}")
         if profit_loss_data:
             print(f"DEBUG: P&L type: {type(profit_loss_data)}, keys: {list(profit_loss_data.keys()) if isinstance(profit_loss_data, dict) else 'N/A'}")
         
-        # Helper to parse single number robustly
+        # Helper to parse single number robustly - lenient
         def parse_number(val):
             if val is None: return None
             if isinstance(val, (int, float)): return float(val)
-            s = str(val).strip().lower()
-            if not s or s in ("-", "—", "na", "nil"): return None
-            neg = s.startswith("(") and s.endswith(")")
-            s = s.strip("()")
-            s = re.sub(r"[₹$,]", "", s)
+            s = str(val).strip()
+            if not s or s.lower() in ("-", "—", "na", "nil", "null"): return None
+
+            # Handle negative in parens
+            neg = False
+            if '(' in s and ')' in s:
+                neg = True
+            
+            # Remove everything except digits, dot, hyphen
             cleaned = re.sub(r"[^0-9.\-]", "", s)
+            
+            # Handle double dots/hyphens if any? simple float logic
             if not cleaned or cleaned == ".": return None
             try:
                 num = float(cleaned)
-                return -num if neg else num
+                return -abs(num) if neg else num
             except (ValueError, TypeError):
                 return None
 
@@ -750,89 +760,307 @@ def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data
                     if v is None:
                         continue
                     
-                    # Try standard number parsing first
+                    # Store if it looks like a year column
+                    is_current_year_col = 'current' in str(k).lower() or '2024' in str(k) or '2023' in str(k) or str(k).lower().endswith('year')
+                    is_note_col = 'note' in str(k).lower()
+
+                    # Try standard number parsing
                     num = parse_number(v)
                     if num is not None:
-                        all_numbers.append(num)
+                        # Skip if this is explicitly a note column
+                        if not is_note_col:
+                            all_numbers.append(num)
                     else:
                         # Try parsing multiple numbers from this value
                         nums = parse_all_numbers(v)
-                        if nums:
+                        if nums and not is_note_col:
                             all_numbers.extend(nums)
-                        # Also capture as text if it's a good description
-                        if isinstance(v, str) and len(v) > 3 and 'note' not in v.lower():
-                            if particulars_value is None or len(v) > len(particulars_value):
-                                particulars_value = v
+                        
+                        # Capture particulars text
+                        # heuristic: value is string, long enough, not a number, not a note header
+                        if isinstance(v, str) and len(v) > 3 and not is_note_col:
+                             # check if it's not just a messy number
+                            if not re.match(r'^[\d,.\-\s()]+$', v):
+                                if particulars_value is None or len(v) > len(particulars_value):
+                                    particulars_value = v
                 
                 # Add if we have text and numbers
                 if particulars_value and all_numbers:
                     particulars_clean = particulars_value.lower().replace("\n", " ").strip()
-                    particulars_clean = " ".join(particulars_clean.split())
+                    # Remove multiple spaces
+                    particulars_clean = re.sub(r'\s+', ' ', particulars_clean)
+                    
                     if len(particulars_clean) > 1:
-                        # Sort numbers and keep only unique values (to avoid duplicates from multiline cells)
-                        unique_numbers = []
+                        # Filter out very small integers that might be note numbers (e.g. < 50) if found among larger numbers
+                        # but be careful with small-cap companies or millions notation
+                        filtered_numbers = []
+                        max_val = max(abs(n) for n in all_numbers) if all_numbers else 0
+                        
                         for n in all_numbers:
-                            if not unique_numbers or abs(n - unique_numbers[-1]) > 0.1:
-                                unique_numbers.append(n)
-                        normalized_data.append({"particulars": particulars_clean, "values": unique_numbers})
+                            # Heuristic: if a number is very small integer (e.g. 1-40) and there's a much larger number, it's likely a note ref
+                            if 1 <= abs(n) <= 50 and abs(n - int(n)) < 0.01 and max_val > 1000:
+                                continue 
+                            filtered_numbers.append(n)
+                            
+                        # If we filtered everything, keep the original numbers (maybe they really are small)
+                        if not filtered_numbers and all_numbers:
+                            filtered_numbers = all_numbers
+
+                        # Sort numbers? No, trust column order.
+                        # But ensure we are capturing distinct values if they came from same string
+                        
+                        normalized_data.append({"particulars": particulars_clean, "values": filtered_numbers})
 
 
-        # Helper to find a value for a set of keywords
-        def find_value(keywords: list, exact_match=False):
-            best_match = None
-            for row in normalized_data:
-                p = row["particulars"]
-                if exact_match:
-                    if p in keywords:
-                        return row["values"][-1] if row["values"] else None
-                else:
-                    # Check if all keywords are in the particulars string
-                    if all(k in p for k in keywords):
-                        best_match = row["values"][-1] if row["values"] else None
-                    # Also check partial matches as fallback
-                    elif any(k in p for k in keywords):
-                        if best_match is None:
-                            # Prefer the latest year value. 
-                            # If row['values'] has multiple, we need to decide which one is 'latest'.
-                            # Usually, tables follow: Particulars | Note | Latest Year | Previous Year
-                            # So values[0] might be Note, values[1] Latest, values[2] Previous
-                            # Or values[0] Latest, values[1] Previous.
-                            # Based on common formats and parse_balance_sheet_page logic:
-                            # It tries to find numeric columns.
-                            if len(row["values"]) >= 2:
-                                # Most likely [Note, Latest, Previous] or [Latest, Previous]
-                                # If the first number is very small (potential Note index) and there's a much larger number next to it
-                                if row["values"][0] < 200 and row["values"][1] > 500:
-                                    best_match = row["values"][1]
-                                else:
-                                    best_match = row["values"][0]
+        # Helper to find a value using Fuzzy Matching
+        import difflib
+
+        def find_value(term_sets: list, exclude_terms: list = None):
+            """
+            Try to find a row matching one of the term_sets using fuzzy matching.
+            term_sets is a list of lists of tokens, e.g. [["total", "assets"], ["assets"]]
+            exclude_terms: list of tokens that MUST NOT appear in the match (e.g. "non" for current assets)
+            """
+            best_val = None
+            best_score = 0.0
+            best_match_text = ""
+
+            for tokens in term_sets:
+                # Construct search phrase
+                search_phrase = " ".join(tokens)
+                
+                for row in normalized_data:
+                    p = row["particulars"]
+                    
+                    # Hard exclusion check first
+                    if exclude_terms:
+                        if any(ex in p for ex in exclude_terms):
+                            continue
+                            
+                    # Calculate similarity ratio
+                    # Use standard SequenceMatcher
+                    matcher = difflib.SequenceMatcher(None, search_phrase, p)
+                    score = matcher.ratio()
+                    
+                    # Boost score if all tokens are present as substrings (exact token match is strong signal)
+                    all_tokens_present = all(t in p for t in tokens)
+                    if all_tokens_present:
+                        score += 0.2  # Bonus for exact token presence
+                    
+                    # Threshold for accepting a match
+                    if score > 0.85 and score > best_score:
+                        best_score = score
+                        best_match_text = p
+                        vals = row["values"]
+                        if vals:
+                            # Value Selection Heuristic:
+                            if len(vals) >= 2:
+                                # Often [Note, Current, Previous] or [Current, Previous]
+                                # If first is small int (Note), take second.
+                                # But filtered_numbers handled notes.
+                                # So typically [Current, Previous].
+                                best_val = vals[0]
                             else:
-                                best_match = row["values"][-1] if row["values"] else None
-            return best_match
+                                best_val = vals[0]
+
+            if best_val is not None:
+                print(f"DEBUG: Fuzzy Match '{search_phrase}' -> '{best_match_text}' (Score: {best_score:.2f}) = {best_val}")
+                return best_val
+            return None
 
         print(f"DEBUG: Found {len(normalized_data)} rows with numeric data")
-        for i, row in enumerate(normalized_data[:5]):
-            print(f"  Row {i}: {row['particulars'][:50]}... = {row['values']}")
-
-
-        # Define search terms from most specific to most general
+        if len(normalized_data) > 0:
+            print(f"Sample rows: {[r['particulars'] for r in normalized_data[:5]]}")
+        
+        # Define search terms using LISTS OF TOKENS for flexible matching
+        # Order: Specific to General
+        # Updated to include exclusion lists where necessary
         SEARCH_TERMS = {
-            "total_assets": [["total assets"]],
-            "current_assets": [["total current assets"], ["current assets"]],
-            "non_current_assets": [["total non-current assets"], ["non-current assets"], ["fixed assets"]],
-            "total_liabilities": [["total liabilities"]],
-            "current_liabilities": [["total current liabilities"], ["current liabilities"]],
-            "non_current_liabilities": [["total non-current liabilities"], ["non-current liabilities"], ["long-term liabilities"]],
-            "equity": [["total equity"], ["equity"], ["shareholder funds"], ["shareholders' funds"]],
-            "share_capital": [["share capital"], ["equity share capital"]],
-            "reserves": [["reserves and surplus"], ["retained earnings"], ["reserves"]],
-            "inventory": [["inventories"]],
-            "receivables": [["trade receivables"], ["accounts receivable"]],
-            "cash": [["cash and cash equivalents"], ["cash and bank balances"], ["cash"]],
-            "payables": [["trade payables"], ["accounts payable"]],
+            "total_assets": {
+                "terms": [["total", "assets"], ["total", "non-current", "assets", "current", "assets"], ["assets"]],
+                "exclude": [] 
+            },
+            "current_assets": {
+                 "terms": [["total", "current", "assets"], ["current", "assets"]],
+                 "exclude": ["non-current", "non current", "fixed"]
+            },
+            "non_current_assets": {
+                "terms": [["total", "non-current", "assets"], ["non-current", "assets"], ["fixed", "assets"], ["property", "plant", "equipment"]],
+                "exclude": []
+            },
+            "total_liabilities": {
+                "terms": [["total", "liabilities"], ["total", "equity", "liabilities"], ["total", "liabilities", "equity"]],
+                "exclude": []
+            },
+            "current_liabilities": {
+                "terms": [["total", "current", "liabilities"], ["current", "liabilities"]],
+                "exclude": ["non-current", "non current"]
+            },
+            "non_current_liabilities": {
+                "terms": [["total", "non-current", "liabilities"], ["non-current", "liabilities"], ["long-term", "borrowings"]],
+                "exclude": []
+            },
+            "equity": {
+                "terms": [["total", "equity"], ["shareholder", "funds"], ["net", "worth"], ["equity", "share", "capital", "other", "equity"]],
+                "exclude": [] 
+            },
+            "share_capital": {
+                "terms": [["share", "capital"], ["equity", "share", "capital"]],
+                "exclude": []
+            },
+            "reserves": {
+                "terms": [["reserves", "surplus"], ["retained", "earnings"], ["other", "equity"]],
+                "exclude": []
+            },
+            "inventory": {
+                "terms": [["inventories"], ["stock", "trade"]],
+                "exclude": []
+            },
+            "receivables": {
+                "terms": [["trade", "receivables"], ["receivables"], ["accounts", "receivable"]],
+                "exclude": []
+            },
+            "cash": {
+                "terms": [["cash", "equivalents"], ["bank", "balances"], ["cash", "hand"]],
+                "exclude": []
+            },
+            "payables": {
+                "terms": [["trade", "payables"], ["payables"], ["accounts", "payable"]],
+                "exclude": []
+            },
+            
+            # P&L terms (if present in this data)
+            "revenue": {
+                "terms": [["revenue", "operations"], ["total", "income"], ["sales"], ["income", "operations"]],
+                "exclude": []
+            },
+            "net_income": {
+                "terms": [["profit", "year"], ["profit", "after", "tax"], ["net", "profit"], ["loss", "year"]],
+                "exclude": []
+            },
+            "cogs": {
+                "terms": [["cost", "materials"], ["purchase", "stock"], ["changes", "inventories"], ["consumption", "materials"]],
+                "exclude": []
+            },
+            "ebitda": {
+                "terms": [["ebitda"], ["earnings", "before", "interest", "tax", "depreciation"]],
+                "exclude": []
+            },
+            "interest_expense": {
+                "terms": [["finance", "costs"], ["interest", "expense"]],
+                "exclude": []
+            }
         }
 
-        if mistral_financials:
+        def find_number_in_dict(val):
+            if val is None: return None
+            if isinstance(val, (int, float)): return float(val)
+            return parse_number(val)
+
+        # Handle Initial Checks for Structured Input
+        financials = {}
+        revenue = None
+        net_income = None
+        cogs = None
+        interest_expense = None
+        ebitda = None
+
+        # Check if balance_sheet_data itself is a structured LLM output (dict with assets, liabilities, etc.)
+        if isinstance(balance_sheet_data, list) and len(balance_sheet_data) > 0:
+            first_item = balance_sheet_data[0]
+            if isinstance(first_item, dict) and ("assets" in first_item or "liabilities" in first_item):
+                print("DEBUG: Using structured LLM data from balance_sheet_data")
+                financials = {
+                    "total_assets": find_number_in_dict(first_item.get("assets", {}).get("total_assets") or first_item.get("assets", {}).get("totalAssets")),
+                    "current_assets": find_number_in_dict(first_item.get("assets", {}).get("current_assets") or first_item.get("assets", {}).get("currentAssets")),
+                    "non_current_assets": find_number_in_dict(first_item.get("assets", {}).get("property_plant_equipment") or first_item.get("assets", {}).get("nonCurrentAssets")),
+                    "total_liabilities": find_number_in_dict(first_item.get("liabilities", {}).get("total_liabilities") or first_item.get("liabilities", {}).get("totalLiabilities")),
+                    "current_liabilities": find_number_in_dict(first_item.get("liabilities", {}).get("current_liabilities") or first_item.get("liabilities", {}).get("currentLiabilities")),
+                    "non_current_liabilities": find_number_in_dict(first_item.get("liabilities", {}).get("long_term_borrowings") or first_item.get("liabilities", {}).get("nonCurrentLiabilities")),
+                    "equity": find_number_in_dict(first_item.get("equity", {}).get("total_equity") or first_item.get("equity", {}).get("totalEquity")),
+                    "inventory": find_number_in_dict(first_item.get("assets", {}).get("inventories")),
+                    "receivables": find_number_in_dict(first_item.get("assets", {}).get("trade_receivables")),
+                    "cash": find_number_in_dict(first_item.get("assets", {}).get("cash_and_equivalents")),
+                    "payables": find_number_in_dict(first_item.get("liabilities", {}).get("trade_payables"))
+                }
+                
+                if "p_and_l" in first_item:
+                    pld = first_item.get("p_and_l", {})
+                    revenue = find_number_in_dict(pld.get("revenue"))
+                    net_income = find_number_in_dict(pld.get("net_profit") or pld.get("netProfit"))
+                    ebitda = find_number_in_dict(pld.get("ebitda"))
+                    interest_expense = find_number_in_dict(pld.get("interest_expense") or pld.get("interestExpense"))
+
+            # --- Check for redrafted (demo.json) structure ---
+            elif isinstance(first_item, dict) and ("equity_and_liabilities" in first_item or "company_details" in first_item):
+                print("DEBUG: Using redrafted (demo.json) structure for ratio calculation")
+                
+                def sum_list_items(item_list):
+                    total = 0.0
+                    if not item_list or not isinstance(item_list, list): return total
+                    for item in item_list:
+                        val = find_number_in_dict(item.get("current_year"))
+                        if val: total += val
+                    return total
+
+                el = first_item.get("equity_and_liabilities", {})
+                sh_funds = el.get("shareholders_funds", [])
+                nc_liab = el.get("non_current_liabilities", [])
+                c_liab = el.get("current_liabilities", [])
+                
+                ast = first_item.get("assets", {})
+                nc_assets = ast.get("non_current_assets", [])
+                c_assets = ast.get("current_assets", [])
+                
+                eq_val = sum_list_items(sh_funds)
+                ncl_val = sum_list_items(nc_liab)
+                cl_val = sum_list_items(c_liab)
+                nca_val = sum_list_items(nc_assets)
+                ca_val = sum_list_items(c_assets)
+                
+                # Try to find specific items like inventory, receivables, cash in current_assets
+                inv_val = 0.0
+                rec_val = 0.0
+                cash_val = 0.0
+                pay_val = 0.0
+                
+                for item in c_assets:
+                    p = str(item.get("particular", "")).lower()
+                    v = find_number_in_dict(item.get("current_year"))
+                    if v:
+                        if "inventory" in p or "stock" in p: inv_val += v
+                        if "receivable" in p: rec_val += v
+                        if "cash" in p or "bank" in p: cash_val += v
+                
+                for item in c_liab:
+                    p = str(item.get("particular", "")).lower()
+                    v = find_number_in_dict(item.get("current_year"))
+                    if v:
+                        if "payable" in p: pay_val += v
+
+                financials = {
+                    "total_assets": nca_val + ca_val,
+                    "current_assets": ca_val,
+                    "non_current_assets": nca_val,
+                    "total_liabilities": ncl_val + cl_val + eq_val, # balance sheet total
+                    "current_liabilities": cl_val,
+                    "non_current_liabilities": ncl_val,
+                    "equity": eq_val,
+                    "inventory": inv_val,
+                    "receivables": rec_val,
+                    "cash": cash_val,
+                    "payables": pay_val
+                }
+                # P&L might be separate or nested; check for it
+                pld = first_item.get("p_and_l", {})
+                if pld:
+                    revenue = find_number_in_dict(pld.get("revenue"))
+                    net_income = find_number_in_dict(pld.get("net_profit"))
+                    ebitda = find_number_in_dict(pld.get("ebitda"))
+                    interest_expense = find_number_in_dict(pld.get("interest_expense"))
+
+
+        if not financials and mistral_financials:
             # If we have structured Mistral data, use it directly
             financials = {
                 "total_assets": mistral_financials.get("assets", {}).get("total_assets"),
@@ -847,17 +1075,32 @@ def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data
                 "cash": mistral_financials.get("assets", {}).get("cash_and_equivalents"),
                 "payables": mistral_financials.get("liabilities", {}).get("trade_payables")
             }
-        else:
-            # Fallback to existing keyword-based extraction from raw rows
-            financials = {}
-            for key, term_sets in SEARCH_TERMS.items():
-                for terms in term_sets:
-                    value = find_value(terms)
-                    if value is not None:
-                        financials[key] = value
-                        break
         
-        # Extract values
+        # If financials still empty, use fuzzy search on normalized_data
+        if not any(v is not None for v in financials.values()):
+            for key, search_config in SEARCH_TERMS.items():
+                term_sets = search_config["terms"]
+                exclude = search_config.get("exclude", [])
+                value = find_value(term_sets, exclude_terms=exclude)
+                if value is not None:
+                    financials[key] = value
+                    print(f"DEBUG: Mapped {key} = {value}")
+
+            # Try to populate P&L metrics if not already present
+            if not revenue and financials.get("revenue"): revenue = financials.get("revenue")
+            if not net_income and financials.get("net_income"): net_income = financials.get("net_income")
+            if not cogs and financials.get("cogs"): cogs = financials.get("cogs")
+            if not interest_expense and financials.get("interest_expense"): interest_expense = financials.get("interest_expense")
+            if not ebitda and financials.get("ebitda"): ebitda = financials.get("ebitda")
+        
+        # Check P&L data if explicitly provided as dict
+        if profit_loss_data:
+            if not revenue: revenue = find_number_in_dict(profit_loss_data.get("revenue") or profit_loss_data.get("total_revenue"))
+            if not net_income: net_income = find_number_in_dict(profit_loss_data.get("net_profit") or profit_loss_data.get("net_income"))
+            if not ebitda: ebitda = find_number_in_dict(profit_loss_data.get("ebitda"))
+            if not interest_expense: interest_expense = find_number_in_dict(profit_loss_data.get("interest_expense") or profit_loss_data.get("finance_costs"))
+
+        # Extract final versions of values
         total_assets = financials.get("total_assets")
         current_assets = financials.get("current_assets")
         non_current_assets = financials.get("non_current_assets")
@@ -872,25 +1115,15 @@ def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data
         cash = financials.get("cash")
         payables = financials.get("payables")
 
-        # P&L metrics initialization
-        revenue = None
-        cogs = None
-        gross_profit = None
-        operating_income = None
-        net_income = None
-        ebit = None
-        interest_expense = None
-        tax_expense = None
-        ebitda = None
-
+        # More robust P&L extraction if from Mistral specifically
         if mistral_financials:
-            # For P&L from Mistral
             p_and_l_mistral = mistral_financials.get("p_and_l", {})
-            revenue = p_and_l_mistral.get("revenue")
-            net_income = p_and_l_mistral.get("net_profit")
-            ebitda = p_and_l_mistral.get("ebitda")
-            interest_expense = p_and_l_mistral.get("interest_expense")
-            ebit = ebitda # approximation if depreciation not separate
+            if revenue is None: revenue = p_and_l_mistral.get("revenue")
+            if net_income is None: net_income = p_and_l_mistral.get("net_profit")
+            if ebitda is None: ebitda = p_and_l_mistral.get("ebitda")
+            if interest_expense is None: interest_expense = p_and_l_mistral.get("interest_expense")
+        
+        ebit = ebitda # approximation if depreciation not separate
 
         # Derive missing values
         if total_liabilities is None and total_assets is not None and equity is not None:
@@ -1480,14 +1713,23 @@ def extract_key_metrics_from_text(text: str) -> dict:
 
     lines = [l.strip() for l in text.splitlines() if l.strip()]
 
-    # Helper to search lines for keywords and return first numeric candidate or all numbers
+    # Helper to search lines for keywords and return first numeric candidate or all numbers using FUZZY MATCH
+    import difflib
     def search_first_number(keywords):
         for ln in lines:
             low = ln.lower()
-            if any(kw in low for kw in keywords):
-                nums = _extract_numbers_from_line(ln)
-                if nums:
-                    return nums
+            # fuzzy check
+            for kw in keywords:
+                # Direct check first
+                if kw in low:
+                    nums = _extract_numbers_from_line(ln)
+                    if nums: return nums
+                
+                # fuzzy check
+                matcher = difflib.SequenceMatcher(None, kw, low)
+                if matcher.ratio() > 0.85:
+                    nums = _extract_numbers_from_line(ln)
+                    if nums: return nums
         return []
 
     # Profit for year (may appear with two years in same note)
@@ -1644,15 +1886,24 @@ def debug_analyze_session(session_id):
         }
 
         found = {}
-        # prioritize lines with keywords
+        # prioritize lines with keywords using FUZZY MATCH
+        import difflib
+        
         for c in candidates:
             text = c['text'].lower()
             for field, keywords in mapping.items():
                 if field in found:
                     continue
                 for kw in keywords:
+                    # Exact match check
                     if kw in text:
-                        # pick the first numeric candidate
+                        found[field] = c['numbers'][0]
+                        break
+                    
+                    # Fuzzy match check
+                    matcher = difflib.SequenceMatcher(None, kw, text)
+                    if matcher.ratio() > 0.85:
+                        print(f"DEBUG: Fuzzy Candidate Match '{kw}' -> '{text}' (Score: {matcher.ratio():.2f})")
                         found[field] = c['numbers'][0]
                         break
                 if field in found:
@@ -1693,9 +1944,6 @@ def debug_analyze_session(session_id):
         if 'cogs' in found:
             pl.setdefault('expenses', {})['costOfMaterialsConsumed'] = found['cogs']
 
-        # Compute ratios using existing function
-        result = calculate_financial_ratios(bs_rows, pl)
-
         # Attempt to extract table-aware rows from the PDF (if available)
         table_rows = []
         try:
@@ -1716,8 +1964,28 @@ def debug_analyze_session(session_id):
         except Exception as e:
             print(f"Error extracting table-aware rows: {e}")
 
+        # Compute ratios using table_rows if available (Terminal JSON source), else fallback to candidate mapping
+        ratios_source_rows = bs_rows
+        if table_rows:
+            # Flatten table_rows
+            flat_table = []
+            for t in table_rows:
+                flat_table.extend(t.get('rows', []))
+            if flat_table:
+                ratios_source_rows = flat_table
+                print("Using structured table_rows (PDF) for debug ratio calculation.")
+        
+        result = calculate_financial_ratios(ratios_source_rows, pl)
+
         # include jurisdiction if stored on session
         jurisdiction = getattr(store, 'jurisdiction', None)
+
+        # Print JSON of the balance sheet table to terminal as requested
+        print("\n" + "="*50)
+        print("🔍 DEBUG: BALANCE SHEET TABLE JSON (TABLE ROWS)")
+        print("="*50)
+        print(json.dumps(table_rows, indent=2, ensure_ascii=False))
+        print("="*50 + "\n")
 
         return jsonify({
             "candidates": candidates,
@@ -1815,11 +2083,92 @@ def upload_pdf():
                     extracted_text += doc.load_page(i).get_text() + "\n"
                 doc.close()
 
+            # Extract structured table rows for the user
+            print("🔍 Extracting structured table rows from identified pages...")
+            table_rows = []
+            try:
+                doc = fitz.open(filepath)
+                for p_idx in bs_pages:
+                    # parse_balance_sheet_page defined at line ~244
+                    page_rows = parse_balance_sheet_page(doc.load_page(p_idx))
+                    if page_rows:
+                        table_rows.append({
+                            "page_number": p_idx + 1,
+                            "rows": page_rows
+                        })
+                doc.close()
+                
+                # FALLBACK: If deterministic extraction failed to get meaningful rows, use Gemini to reconstruct the table
+                if not table_rows or all(len(p.get('rows', [])) == 0 for p in table_rows):
+                    print("⚠️ Deterministic table extraction yielded no rows. Using AI to reconstruct the table structure...")
+                    try:
+                        table_reconstruction_prompt = f"""
+                        You are a senior financial data engineer. Your task is to reconstruct the Balance Sheet from the provided text into a highly structured JSON format matching the demo.json schema.
+                        
+                        Text content:
+                        {extracted_text[:15000]}
+
+                        EXPECTED JSON OUTPUT FORMAT:
+                        {{
+                          "company_details": {{ 
+                            "company_name": "...", 
+                            "cin": "...", 
+                            "balance_sheet_date": "DD-MM-YYYY", 
+                            "current_financial_year": "2024-25", 
+                            "previous_financial_year": "2023-24", 
+                            "currency": "INR" 
+                          }},
+                          "equity_and_liabilities": {{
+                             "shareholders_funds": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ],
+                             "non_current_liabilities": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ],
+                             "current_liabilities": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ]
+                          }},
+                          "assets": {{
+                             "non_current_assets": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ],
+                             "current_assets": [ {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }} ]
+                          }},
+                          "p_and_l": {{
+                             "revenue": {{ "current": X, "previous": X }},
+                             "net_profit": {{ "current": X, "previous": X }},
+                             "ebitda": {{ "current": X, "previous": X }},
+                             "interest_expense": {{ "current": X, "previous": X }}
+                          }}
+                        }}
+                        
+                        Rules:
+                        1. Capture every row and column accurately.
+                        2. Use absolute numbers (no commas). Use null if missing.
+                        3. Return ONLY the JSON object.
+                        """
+                        print("DEBUG: Sending table reconstruction prompt to Gemini...")
+                        reconstructed_json = financial_analyzer.analyze_financial_text(table_reconstruction_prompt)
+                        if reconstructed_json:
+                            # Clean up and parse
+                            clean_json = reconstructed_json.strip()
+                            if "```json" in clean_json: clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+                            elif "```" in clean_json: clean_json = clean_json.split("```")[1].split("```")[0].strip()
+                            
+                            gemini_rows = json.loads(clean_json)
+                            if gemini_rows:
+                                table_rows = [{"page_number": "combined_ai_reconstruction", "rows": gemini_rows}]
+                                print("✅ Gemini Table Reconstruction Success")
+                    except Exception as tr_err:
+                        print(f"❌ Gemini table reconstruction failed: {tr_err}")
+
+                # Attach to analyzer for potential frontend use
+                financial_analyzer.table_rows = table_rows
+            except Exception as e:
+                print(f"⚠️ Error extracting table rows: {e}")
+
             # Create JSON file of that balance sheet content
+            import datetime
             raw_bs_structure = {
                 "session_id": session_id, 
                 "source": "pdf_extraction",
+                "version": "2.0-TableAI",
+                "timestamp": datetime.datetime.now().isoformat(),
                 "identified_pages": bs_pages,
+                "table_rows": table_rows,
                 "content": extracted_text
             }
             
@@ -1828,19 +2177,106 @@ def upload_pdf():
                 json.dump(raw_bs_structure, f, indent=2, ensure_ascii=False)
             
             print(f"✅ Balance Sheet Content JSON saved to: {raw_bs_path}")
-            print("⬇️ TERMINAL OUTPUT OF EXTRACTED PAGE JSON ⬇️")
+            print("\n" + "═"*50)
+            print("📊 BALANCE SHEET TABLE JSON (TERMINAL OUTPUT)")
+            print("═"*50)
             print(json.dumps(raw_bs_structure, indent=2, ensure_ascii=False))
-            print("⬆️ END OF JSON OUTPUT ⬆️")
+            print("═"*50 + "\n")
 
-            # Use Kimi LLM to pdf balance sheet details in json format
-            print("🚀 sending content to Kimi LLM for structured extraction...")
-            balance_sheet_data = extract_financials_with_kimi(extracted_text)
+            # Use local Phi-4 LLM to extract balance sheet details in json format
+            print("🚀 sending content to local LLM for structured extraction...")
+            balance_sheet_data = extract_financials(extracted_text)
             
+            if not balance_sheet_data:
+                print("⚠️ Kimi LLM failed or returned invalid data. Falling back to Gemini LLM...")
+                try:
+                    # Construct extraction prompt for Gemini
+                    gemini_prompt = f"""
+                    You are an expert financial analyst. Your task is to extract the Balance Sheet and Profit & Loss from the provided text into a highly structured JSON format (demo.json style).
+                    
+                    The text may contain data for multiple years. ALWAYS extract data for BOTH the LATEST financial year AND the PREVIOUS financial year if available.
+                    
+                    Output the data in EXACTLY this JSON format:
+                    {{
+                      "company_details": {{
+                        "company_name": "...",
+                        "cin": "...",
+                        "balance_sheet_date": "DD-MM-YYYY",
+                        "current_financial_year": "2024-25",
+                        "previous_financial_year": "2023-24",
+                        "currency": "INR"
+                      }},
+                      "equity_and_liabilities": {{
+                        "shareholders_funds": [
+                          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+                        ],
+                        "non_current_liabilities": [
+                          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+                        ],
+                        "current_liabilities": [
+                          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+                        ]
+                      }},
+                      "assets": {{
+                        "non_current_assets": [
+                          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+                        ],
+                        "current_assets": [
+                          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+                        ]
+                      }},
+                      "p_and_l": {{
+                        "revenue": {{ "current": X, "previous": X }},
+                        "net_profit": {{ "current": X, "previous": X }},
+                        "ebitda": {{ "current": X, "previous": X }},
+                        "interest_expense": {{ "current": X, "previous": X }}
+                      }}
+                    }}
+                    
+                    Rules:
+                    1. Extract all line items from the balance sheet.
+                    2. Use absolute numbers. Remove commas and currency symbols.
+                    3. If a value is not found, return null.
+                    4. Return ONLY the raw JSON block.
+                    
+                    Text content:
+                    {extracted_text[:30000]}
+                    """
+                    gemini_response = financial_analyzer.analyze_financial_text(gemini_prompt)
+                    
+                    if gemini_response:
+                        # Clean up response to get pure JSON
+                        json_str = gemini_response.strip()
+                        if "```json" in json_str:
+                            json_str = json_str.split("```json")[1].split("```")[0].strip()
+                        elif "```" in json_str:
+                            json_str = json_str.split("```")[1].split("```")[0].strip()
+                        
+                        balance_sheet_data = json.loads(json_str)
+                        print("✅ Gemini LLM Extraction Success")
+                except Exception as g_err:
+                    print(f"❌ Gemini fallback also failed: {g_err}")
+                    balance_sheet_data = None
+
             if balance_sheet_data:
-                print("✅ Kimi LLM Extraction Result:")
+                print("✅ LLM Extraction Result:")
                 print(json.dumps(balance_sheet_data, indent=2, ensure_ascii=False))
             else:
-                print("⚠️ Kimi LLM did not return valid JSON data.")
+                print("⚠️ Both Kimi and Gemini LLMs failed to return valid JSON data.")
+
+            # --- ADVANCED EXTRACTION ATTEMPT (Apryse/LEADTOOLS) ---
+            if AdvancedPDFService.is_apryse_available() or AdvancedPDFService.is_leadtools_available():
+                print("💎 Attempting advanced SDK extraction for high-fidelity data...")
+                advanced_data = AdvancedPDFService.smart_extract(filepath)
+                if advanced_data:
+                    print("✅ Advanced Extraction Result obtained.")
+                    # We store it for reference, though LLM result is primary for the main app logic currently
+                    financial_analyzer.advanced_extraction = advanced_data
+                    # If LLM failed, we could potentially rely on this, but usually LLM is better for categorization
+                    if not balance_sheet_data:
+                        print("Using advanced extraction data as fallback for balance_sheet_data")
+                        balance_sheet_data = advanced_data
+            # ------------------------------------------------------
 
         except Exception as e:
             print(f"Error in updated balance sheet flow: {e}")
@@ -1867,6 +2303,13 @@ def upload_pdf():
 
         # If balance sheet data is found, store it
         if balance_sheet_data:
+            # Print JSON of the balance sheet table to terminal as requested
+            print("\n" + "="*50)
+            print("📊 BALANCE SHEET TABLE JSON (TERMINAL OUTPUT)")
+            print("="*50)
+            print(json.dumps(balance_sheet_data, indent=2, ensure_ascii=False))
+            print("="*50 + "\n")
+
             # Store the balance sheet data in financial_analyzer
             financial_analyzer.balance_sheet_data = balance_sheet_data
             try:
@@ -1876,17 +2319,32 @@ def upload_pdf():
 
             # Attempt to compute ratios immediately (deterministic) and attach to analyzer
             try:
-                # Flatten balance_sheet_data (it may be list-of-pages)
+                # Prioritize using table_rows (Balance Sheet JSON from Terminal) for ratio calculation
                 flat_rows = []
-                if isinstance(balance_sheet_data, list):
-                    for page in balance_sheet_data:
-                        if isinstance(page, list):
-                            for r in page:
-                                flat_rows.append(r)
-                        elif isinstance(page, dict):
-                            flat_rows.append(page)
-                elif isinstance(balance_sheet_data, dict):
-                    flat_rows = [balance_sheet_data]
+                
+                # 1. Try table_rows
+                if table_rows and len(table_rows) > 0:
+                    print("Using 'table_rows' (Balance Sheet JSON) for ratio calculation...")
+                    for page in table_rows:
+                        if isinstance(page, dict) and "rows" in page:
+                            rows_data = page["rows"]
+                            if isinstance(rows_data, list):
+                                flat_rows.extend(rows_data)
+                            elif isinstance(rows_data, dict):
+                                # If AI returned the whole structure here, wrap in list
+                                flat_rows.append(rows_data)
+
+                # 2. Fallback to balance_sheet_data (LLM) if table_rows is empty
+                if not flat_rows and balance_sheet_data:
+                    print("Using 'balance_sheet_data' (LLM) for ratio calculation...")
+                    if isinstance(balance_sheet_data, list):
+                        for page in balance_sheet_data:
+                            if isinstance(page, list):
+                                flat_rows.extend(page)
+                            elif isinstance(page, dict):
+                                flat_rows.append(page)
+                    elif isinstance(balance_sheet_data, dict):
+                        flat_rows = [balance_sheet_data]
 
                 # compute ratios using available P&L (if any)
                 try:
@@ -2125,210 +2583,9 @@ def debug_trigger_analyze(session_id):
 
 
 
-import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r"C:/Program Files/Tesseract-OCR/tesseract.exe"
+# Legacy extraction functions removed (Tesseract/OpenCV)
+# Now using GLM OCR exclusively via mistral and financial_analyzer modules.
 
-
-def preprocess_image(image_path):
-    img = cv2.imread(image_path)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY_INV)
-    horiz_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (50, 1))
-    vert_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 50))
-    mask = cv2.morphologyEx(binary, cv2.MORPH_OPEN, horiz_kernel)
-    mask += cv2.morphologyEx(binary, cv2.MORPH_OPEN, vert_kernel)
-    cleaned = cv2.bitwise_and(binary, cv2.bitwise_not(mask))
-    return cv2.bitwise_not(cleaned)
-
-# ---- Financial Data Parser ----
-def parse_with_gemini(prompt_text):
-    try:
-        try:
-            analyzer = FinancialAnalyzer()  # Create without a file for parsing only
-            response = analyzer.analyze_financial_text(prompt_text)
-        except TypeError as te:
-            # Fallback: try to call LLM directly if FinancialAnalyzer cannot be constructed
-            print(f"Warning: FinancialAnalyzer instantiation failed: {te}. Falling back to direct LLM.")
-            try:
-                from financial_analyzer import Config
-                from langchain_google_genai import GoogleGenerativeAI
-                cfg = Config()
-                if not getattr(cfg, 'GOOGLE_API_KEY', None):
-                    raise ValueError("Google API key not set in Config for direct LLM fallback.")
-                llm = GoogleGenerativeAI(model=cfg.LLM_MODEL, google_api_key=cfg.GOOGLE_API_KEY, temperature=0.2)
-                response = llm.invoke(prompt_text)
-            except Exception as e:
-                print(f"Direct LLM fallback failed: {e}")
-                raise
-
-        if isinstance(response, dict):
-            return response
-        match = re.search(r"\{.*\}", response, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except Exception:
-                # If JSON parsing fails, return raw response for debugging
-                return response
-        print("❌ Response did not contain JSON.")
-    except Exception as e:
-        print("❌ Financial parsing failed:", e)
-    return None
-
-# ---- Prompts ----
-def get_balance_sheet_prompt(text):
-    return f'''
-Extract the Balance Sheet as strictly valid JSON in the following format only:
-
-{{ 
-  "as_of": [], 
-  "assets": {{
-    "nonCurrentAssets": {{
-      "propertyPlantAndEquipment": [],
-      "capitalWorkInProgress": [],
-      "investmentProperty": [],
-      "intangibleAssets": [],
-      "intangibleAssetsUnderDevelopment": [],
-      "financialAssetsInvestments": [],
-      "loanToSubsidiary": [],
-      "otherFinancialAssets": [],
-      "nonCurrentTaxAssetsNet": [],
-      "otherNonCurrentAssets": []
-    }},
-    "currentAssets": {{
-      "inventories": [],
-      "financialAssetsInvestments": [],
-      "tradeReceivables": [],
-      "cashAndCashEquivalents": [],
-      "bankBalancesOtherThanCash": [],
-      "loanToSubsidiary": [],
-      "otherFinancialAssets": [],
-      "otherCurrentAssets": []
-    }},
-    "totalAssets": []
-  }},
-  "equityAndLiabilities": {{
-    "equity": {{
-      "equityShareCapital": [],
-      "otherEquity": []
-    }},
-    "liabilities": {{
-      "nonCurrentLiabilities": {{
-        "borrowings": [],
-        "leaseLiabilities": [],
-        "otherFinancialLiabilities": [],
-        "provisions": [],
-        "deferredTaxLiabilitiesNet": []
-      }},
-      "currentLiabilities": {{
-        "borrowings": [],
-        "leaseLiabilities": [],
-        "tradePayablesDueToMicro": [],
-        "tradePayablesDueToOthers": [],
-        "otherFinancialLiabilities": [],
-        "otherCurrentLiabilities": [],
-        "provisions": [],
-        "currentTaxLiabilitiesNet": []
-      }},
-      "totalLiabilities": []
-    }},
-    "totalEquityAndLiabilities": []
-  }}
-}}
-
-Now extract from this text:
-{text}
-'''
-
-def get_pl_prompt(text):
-    return f'''
-Extract the Profit and Loss statement as strictly valid JSON in the format:
-
-{{
-  "for_year_ended": [],
-  "income": {{
-    "revenueFromOperations": [],
-    "otherIncome": [],
-    "totalIncome": []
-  }},
-  "expenses": {{
-    "costOfMaterialsConsumed": [],
-    "purchaseOfStockInTrade": [],
-    "changeInInventories": [],
-    "employeeBenefitsExpense": [],
-    "financeCosts": [],
-    "depreciationAndAmortisation": [],
-    "advertisementAndPublicity": [],
-    "otherExpenses": [],
-    "totalExpenses": []
-  }},
-  "profitBeforeExceptionalItemsAndTax": [],
-  "exceptionalItems": [],
-  "profitBeforeTax": [],
-  "taxExpense": {{
-    "currentTax": [],
-    "deferredTax": [],
-    "totalTaxExpense": []
-  }},
-  "netProfit": [],
-  "earningsPerEquityShare": {{
-    "basic": [],
-    "diluted": []
-  }}
-}}
-
-Now extract from this text:
-{text}
-'''
-
-# ---- Process PDF Pages ----
-def extract_tables_from_pdf(pdf_path):
-    doc = fitz.open(pdf_path)
-    result = {
-        "balanceSheet": None,
-        "profitAndLoss": None
-    }
-
-    with tempfile.TemporaryDirectory() as tempdir:
-        for page_num in range(len(doc) - 1):  # ensure next page exists
-            page = doc.load_page(page_num)
-            pix = page.get_pixmap(dpi=300)
-            img_path = os.path.join(tempdir, f"page_{page_num}.png")
-            pix.save(img_path)
-
-            # Preprocess and OCR
-            clean_img = preprocess_image(img_path)
-            clean_path = os.path.join(tempdir, f"cleaned_{page_num}.png")
-            cv2.imwrite(clean_path, clean_img)
-            text = pytesseract.image_to_string(clean_path, config="--psm 6")
-
-            if "equity" in text.lower() and "liabilities" in text.lower():
-                print(f"📄 Balance sheet found on page {page_num + 1}")
-                print(f"DEBUG: Balance sheet OCR text length: {len(text)}")
-                result["balanceSheet"] = parse_with_gemini(get_balance_sheet_prompt(text))
-                print(f"DEBUG: Balance sheet extracted: {result['balanceSheet'] is not None}")
-
-                # Automatically fetch next page for PL
-                next_page = doc.load_page(page_num + 1)
-                next_pix = next_page.get_pixmap(dpi=300)
-                next_img_path = os.path.join(tempdir, f"page_{page_num+1}.png")
-                next_pix.save(next_img_path)
-
-                clean_next = preprocess_image(next_img_path)
-                clean_next_path = os.path.join(tempdir, f"cleaned_{page_num+1}.png")
-                cv2.imwrite(clean_next_path, clean_next)
-                next_text = pytesseract.image_to_string(clean_next_path, config="--psm 6")
-
-                print(f"📄 Processing page {page_num + 2} for Profit & Loss statement")
-                print(f"DEBUG: P&L OCR text length: {len(next_text)}")
-                result["profitAndLoss"] = parse_with_gemini(get_pl_prompt(next_text))
-                print(f"DEBUG: P&L extracted: {result['profitAndLoss'] is not None}")
-                if result['profitAndLoss']:
-                    print(f"DEBUG: P&L keys: {list(result['profitAndLoss'].keys()) if isinstance(result['profitAndLoss'], dict) else 'Not a dict'}")
-                break
-
-    print(f"DEBUG: Final extraction result - BS: {result['balanceSheet'] is not None}, PL: {result['profitAndLoss'] is not None}")
-    return result
 
 
 def save_pdf_store(session_id, balance_sheet, profit_and_loss):
@@ -2372,6 +2629,75 @@ def load_persisted_sessions():
 
 # Run load at module import
 load_persisted_sessions()
+
+
+@app.route('/api/redraft/<session_id>', methods=['POST'])
+def redraft_session_json(session_id):
+    """
+    Refines existing session data using Kimi's intelligence.
+    Takes existing extraction and context text to 'redraft' a more accurate JSON.
+    """
+    try:
+        session_file = os.path.join(SESSIONS_FOLDER, f"{session_id}.json")
+        if not os.path.exists(session_file):
+            return jsonify({"error": "Session not found"}), 404
+
+        with open(session_file, 'r', encoding='utf-8') as f:
+            session_data = json.load(f)
+
+        draft_json = session_data.get("balance_sheet_data")
+        if not draft_json:
+             return jsonify({"error": "No draft data found for this session."}), 400
+
+        # Try to find context text from associated content file
+        context_text = ""
+        content_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_bs_content.json")
+        if os.path.exists(content_path):
+            with open(content_path, 'r', encoding='utf-8') as f:
+                content_data = json.load(f)
+                context_text = content_data.get("content", "")
+
+        from local_llm_client import redraft_json
+        redrafted = redraft_json(draft_json, context_text)
+
+        if redrafted:
+            # Update session data
+            session_data["balance_sheet_data"] = redrafted
+            session_data["redrafted_at"] = datetime.datetime.now().isoformat()
+            
+            # Recalculate ratios with redrafted data
+            try:
+                # Attempt to find P&L if available
+                pl_data = session_data.get("profit_and_loss")
+                # Flatten the data for ratio calculation if it's in the redrafted structure
+                # (Normally it's a dict following the Gemini/Kimi schema)
+                ratios_result = calculate_financial_ratios([redrafted], pl_data)
+                session_data["ratios_result"] = ratios_result
+                
+                # Also update runtime store if it exists
+                if session_id in pdf_stores:
+                    store = pdf_stores[session_id]
+                    if hasattr(store, 'balance_sheet_data'):
+                        store.balance_sheet_data = redrafted
+                    if hasattr(store, 'ratios_result'):
+                        store.ratios_result = ratios_result
+            except Exception as ratio_err:
+                print(f"Ratio recalculation failed after redraft: {ratio_err}")
+
+            with open(session_file, 'w', encoding='utf-8') as f:
+                json.dump(session_data, f, ensure_ascii=False, indent=2)
+
+            return jsonify({
+                "message": "Redraft successful",
+                "session_id": session_id,
+                "redrafted_data": redrafted
+            }), 200
+        else:
+            return jsonify({"error": "Kimi failed to redraft the JSON."}), 500
+
+    except Exception as e:
+        print(f"Error in redraft_session_json: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/debug/create-fake-session", methods=["POST"])
@@ -3161,7 +3487,8 @@ def financial_ratio():
         return jsonify({
             "response": enhanced_ratios,
             "balance_sheet_data": balance_data,
-            "comprehensive_balance_sheet": comprehensive_bs
+            "comprehensive_balance_sheet": comprehensive_bs,
+            "table_rows": getattr(pdf_store, 'table_rows', None)
         }), 200
 
     except ValueError as ve:
@@ -3776,3 +4103,4 @@ def get_all_agent_results():
 
 if __name__ == "__main__":
     app.run(debug=False, port=5002)
+ 

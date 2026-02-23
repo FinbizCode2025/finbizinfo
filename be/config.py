@@ -8,6 +8,10 @@ load_dotenv()
 class Config:
     # API Keys
     _GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    APRYSE_LICENSE_KEY = os.getenv('APRYSE_LICENSE_KEY')
+    LEADTOOLS_LICENSE_KEY = os.getenv('LEADTOOLS_LICENSE_KEY')
+    LEADTOOLS_DEV_LICENSE_FILE = os.getenv('LEADTOOLS_DEV_LICENSE_FILE') # Path to .lic file
+    LEADTOOLS_DEV_KEY = os.getenv('LEADTOOLS_DEV_KEY')
 
     # Model Configuration
     EMBEDDING_MODEL = os.getenv('EMBEDDING_MODEL', 'sentence-transformers/all-MiniLM-L6-v2')

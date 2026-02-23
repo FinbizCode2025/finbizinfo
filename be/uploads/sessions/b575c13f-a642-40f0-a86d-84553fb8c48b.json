@@ -1,0 +1,34 @@
+{
+  "original_filepath": "uploads\\b575c13f-a642-40f0-a86d-84553fb8c48b_cigma_bs.pdf",
+  "balance_sheet_data": {
+    "year": "2024",
+    "assets": {
+      "total_assets": 1211.87,
+      "current_assets": 780.56,
+      "cash_and_equivalents": 109.5,
+      "inventories": null,
+      "trade_receivables": 715.66,
+      "property_plant_equipment": 226.22
+    },
+    "liabilities": {
+      "total_liabilities": 1211.87,
+      "current_liabilities": 291.02,
+      "trade_payables": 19.76,
+      "short_term_borrowings": 115.66,
+      "long_term_borrowings": 25.0
+    },
+    "equity": {
+      "total_equity": 1031.1
+    },
+    "p_and_l": {
+      "revenue": 2181.48,
+      "net_profit": 91.6,
+      "ebitda": 128.48,
+      "interest_expense": null
+    }
+  },
+  "ratios_result": {
+    "ratios": {},
+    "status": "An error occurred during ratio calculation: name 're' is not defined"
+  }
+}

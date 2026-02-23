@@ -1,0 +1,64 @@
+{
+  "session_id": "08d60118-cba1-4163-99a3-802557b25ccc",
+  "source": "pdf_extraction",
+  "version": "2.0-TableAI",
+  "timestamp": "2026-02-20T12:04:30.579903",
+  "identified_pages": [
+    0,
+    9
+  ],
+  "table_rows": [
+    {
+      "page_number": 1,
+      "rows": [
+        {
+          "Particulars": "Opinion",
+          "Col_1": "143(10) of the Act. Our responsibilities under those SAs",
+          "_numbers": [
+            14310.0
+          ]
+        },
+        {
+          "Particulars": "section 133 of the Act read with the Companies (Indian",
+          "Col_1": "4.",
+          "Col_2": "Key audit matters are those matters that, in our professional",
+          "_numbers": [
+            4.0
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 10,
+      "rows": [
+        {
+          "Particulars": "the plans of the Board of Directors and management and",
+          "Col_1": "Firm’s Registration No: 301174E",
+          "_numbers": [
+            301174.0
+          ]
+        },
+        {
+          "Particulars": "on the date of the audit report that Company is not capable",
+          "Col_1": "Place :",
+          "Col_2": "New Delhi",
+          "Col_3": "Membership No: 051717",
+          "_numbers": [
+            51717.0
+          ]
+        },
+        {
+          "Particulars": "of meeting its liabilities existing at the date of balance sheet",
+          "Col_1": "Date :",
+          "Col_2": "02 May 2024",
+          "Col_3": "UDIN: 24051717BKFDXV6499",
+          "_numbers": [
+            22024.0,
+            240517176499.0
+          ]
+        }
+      ]
+    }
+  ],
+  "content": "\n--- Page 1 ---\nOpinion\n1. \nWe have audited the accompanying standalone financial \nstatements of Dabur India Limited (‘the Company’), \nwhich comprise the Balance Sheet as at 31 March \n2024, the Statement of Profit and Loss (including Other \nComprehensive Income), the Statement of Cash Flows, the \nStatement of Changes in Equity for the year then ended, \nnotes to the standalone financial statements and material \naccounting policies and other explanatory information.\n2. \nIn our opinion and to the best of our information and \naccording to the explanations given to us, the aforesaid \nstandalone financial statements give the information required \nby the Companies Act, 2013 (‘the Act’) in the manner so \nrequired and give a true and fair view in conformity with \nthe Indian Accounting Standards (‘Ind AS’) specified under \nsection 133 of the Act read with the Companies (Indian \nAccounting Standards) Rules, 2015 and other accounting \nprinciples generally accepted in India, of the state of affairs of \nthe Company as at 31 March 2024, and its profit (including \nother comprehensive income), its cash flows and the changes \nin equity for the year ended on that date.\nBasis for Opinion\n3. \nWe conducted our audit in accordance with the \nStandards on Auditing (SAs) specified under section \nIndependent Auditor’s Report\nTo the Members of Dabur India Limited \nReport on the Audit of the Standalone Financial Statements\n143(10) of the Act. Our responsibilities under those SAs \nare further described in the Auditor’s Responsibilities for \nthe Audit of the Standalone Financial Statements section \nof our report. We are independent of the Company in \naccordance with the Code of Ethics issued by the Institute \nof Chartered Accountants of India (‘ICAI’) together with \nthe ethical requirements that are relevant to our audit \nof the financial statements under the provisions of the \nAct and the rules thereunder, and we have fulfilled our \nother ethical responsibilities in accordance with these \nrequirements and the Code of Ethics. We believe that \nthe audit evidence we have obtained is sufficient and \nappropriate to provide a basis for our opinion on the \nstandalone financial statements.\nKey Audit Matters\n4. \nKey audit matters are those matters that, in our professional \njudgment, were of most significance in our audit of the \nstandalone financial statements of the current period. \nThese matters were addressed in the context of our audit \nof the standalone financial statements as a whole, and in \nforming our opinion thereon, and we do not provide a \nseparate opinion on these matters.\n5. \nWe have determined the matters described below to \nbe the key audit matters to be communicated in our \nreport.\nKey audit matter\nHow our audit addressed the key audit matter\nA. Revenue recognition\nRefer note 34 to the standalone financial \nstatements.\nThe Revenues of the Company consists \nprimarily of sale of products and is \nrecognized when control of products being \nsold is transferred to customer and there is \nno unfulfilled obligation.\nRevenue is measured at fair value of the \nconsideration received or receivable and \nis accounted for net of rebates and trade \ndiscounts.\nOur key procedures included, but were not limited to, the following:\na) Assessed the appropriateness of the Company’s revenue recognition \naccounting policies, including those relating to rebates and trade \ndiscounts by comparing with the applicable accounting standards;\nb) Tested the design and operating effectiveness of the general IT control \nenvironment and the manual controls for recognition of revenue, \ncalculation of discounts and rebates;\nc) Performed test of details:\ni. Tested, on a sample basis, sales transactions to the underlying \nsupporting documentation which includes goods dispatch notes and \nshipping documents;\nii. Reviewed, on a sample basis, sales agreements and the underlying \ncontractual terms related to delivery of goods and rebates to assess \nthe Company’s revenue recognition policies with reference to the \nrequirements of the applicable accounting standards;\nDabur India Limited\n308\nCorporate Overview Board & Management Reports Financial Statements\n\n--- Page 10 ---\n(d) Based on the information and explanations given to \nus and as represented by the management of the \nCompany, the Group (as defined in Core Investment \nCompanies (Reserve Bank) Directions, 2016) has \nonly one CIC as part of the Group.\n(xvii) The Company has not incurred any cash loss in the \ncurrent as well as the immediately preceding financial \nyear.\n(xviii) There has been no resignation of the statutory auditors \nduring the year. Accordingly, reporting under clause \n3(xviii) of the Order is not applicable to the Company.\n(xix) According to the information and explanations given to \nus and on the basis of the financial ratios, ageing and \nexpected dates of realisation of financial assets and payment \nof financial liabilities, other information accompanying \nthe standalone financial statements, our knowledge of \nthe plans of the Board of Directors and management and \nbased on our examination of the evidence supporting the \nassumptions, nothing has come to our attention, which \ncauses us to believe that, any material uncertainty exists as \non the date of the audit report that Company is not capable \nof meeting its liabilities existing at the date of balance sheet \nas and when they fall due within a period of one year from \nthe balance sheet date. We, however, state that this is not \nan assurance as to the future viability of the Company. We \nfurther state that our reporting is based on the facts up to the \ndate of the audit report and we neither give any guarantee \nnor any assurance that all liabilities falling due within a \nperiod of one year from the balance sheet date, will get \ndischarged by the company as and when they fall due.\n(xx) According to the information and explanations given to \nus, the Company does not have any unspent amount in \nrespect of any ongoing or other than ongoing project as \nat the expiry of the financial year. Accordingly, reporting \nunder clause 3(xx) of the Order is not applicable to the \nCompany.\n \nFor G Basu & Co\nChartered Accountants \nFirm’s Registration No: 301174E\nSubroto Lahiri \nPartner \nPlace : New Delhi  \nMembership No: 051717 \nDate : 02 May 2024  \nUDIN: 24051717BKFDXV6499\nIntegrated Annual Report 2023-24\n317\nCorporate Overview Board & Management Reports Financial Statements\n"
+}

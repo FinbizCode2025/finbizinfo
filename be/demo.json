@@ -1,0 +1,167 @@
+{
+  "company_details": {
+    "company_name": "ABC Private Limited",
+    "cin": "U12345DL2020PTC000000",
+    "balance_sheet_date": "31-03-2025",
+    "current_financial_year": "2024-25",
+    "previous_financial_year": "2023-24",
+    "currency": "INR"
+  },
+
+  "equity_and_liabilities": {
+    "shareholders_funds": [
+      {
+        "particular": "Equity Share Capital",
+        "note_no": 1,
+        "current_year": 1000000,
+        "previous_year": 1000000
+      },
+      {
+        "particular": "Preference Share Capital",
+        "note_no": 2,
+        "current_year": 200000,
+        "previous_year": 200000
+      },
+      {
+        "particular": "Reserves & Surplus",
+        "note_no": 3,
+        "current_year": 450000,
+        "previous_year": 300000
+      },
+      {
+        "particular": "Retained Earnings",
+        "note_no": 4,
+        "current_year": 180000,
+        "previous_year": 120000
+      }
+    ],
+
+    "non_current_liabilities": [
+      {
+        "particular": "Long Term Borrowings (Bank Loan)",
+        "note_no": 5,
+        "current_year": 600000,
+        "previous_year": 750000
+      },
+      {
+        "particular": "Deferred Tax Liabilities",
+        "note_no": 6,
+        "current_year": 85000,
+        "previous_year": 70000
+      },
+      {
+        "particular": "Long Term Provisions (Gratuity)",
+        "note_no": 7,
+        "current_year": 40000,
+        "previous_year": 35000
+      }
+    ],
+
+    "current_liabilities": [
+      {
+        "particular": "Short Term Borrowings (OD/CC)",
+        "note_no": 8,
+        "current_year": 150000,
+        "previous_year": 125000
+      },
+      {
+        "particular": "Trade Payables",
+        "note_no": 9,
+        "current_year": 220000,
+        "previous_year": 190000
+      },
+      {
+        "particular": "Other Current Liabilities (GST Payable, TDS Payable)",
+        "note_no": 10,
+        "current_year": 65000,
+        "previous_year": 52000
+      },
+      {
+        "particular": "Short Term Provisions (Expenses Payable)",
+        "note_no": 11,
+        "current_year": 45000,
+        "previous_year": 40000
+      }
+    ]
+  },
+
+  "assets": {
+    "non_current_assets": [
+      {
+        "particular": "Property, Plant & Equipment (Building)",
+        "note_no": 12,
+        "current_year": 850000,
+        "previous_year": 900000
+      },
+      {
+        "particular": "Furniture & Fixtures",
+        "note_no": 13,
+        "current_year": 120000,
+        "previous_year": 140000
+      },
+      {
+        "particular": "Computers & Office Equipment",
+        "note_no": 14,
+        "current_year": 90000,
+        "previous_year": 110000
+      },
+      {
+        "particular": "Intangible Assets (Software)",
+        "note_no": 15,
+        "current_year": 60000,
+        "previous_year": 75000
+      },
+      {
+        "particular": "Long Term Investments",
+        "note_no": 16,
+        "current_year": 200000,
+        "previous_year": 150000
+      },
+      {
+        "particular": "Deferred Tax Assets",
+        "note_no": 17,
+        "current_year": 50000,
+        "previous_year": 40000
+      }
+    ],
+
+    "current_assets": [
+      {
+        "particular": "Inventories (Stock in Trade)",
+        "note_no": 18,
+        "current_year": 300000,
+        "previous_year": 280000
+      },
+      {
+        "particular": "Trade Receivables",
+        "note_no": 19,
+        "current_year": 260000,
+        "previous_year": 210000
+      },
+      {
+        "particular": "Cash in Hand",
+        "note_no": 20,
+        "current_year": 35000,
+        "previous_year": 30000
+      },
+      {
+        "particular": "Bank Balance",
+        "note_no": 21,
+        "current_year": 175000,
+        "previous_year": 150000
+      },
+      {
+        "particular": "Short Term Loans & Advances",
+        "note_no": 22,
+        "current_year": 60000,
+        "previous_year": 55000
+      },
+      {
+        "particular": "Other Current Assets (Prepaid Expenses, GST ITC)",
+        "note_no": 23,
+        "current_year": 40000,
+        "previous_year": 30000
+      }
+    ]
+  }
+}

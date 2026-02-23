@@ -1,0 +1,34 @@
+{
+  "original_filepath": "uploads\\6390c59d-b6b9-4b1d-a514-686d0af125f9_cigma_bs.pdf",
+  "balance_sheet_data": {
+    "year": "2024",
+    "assets": {
+      "total_assets": 1211.87,
+      "current_assets": 454.52,
+      "cash_and_equivalents": 109.5,
+      "inventories": null,
+      "trade_receivables": 715.66,
+      "property_plant_equipment": 506.16
+    },
+    "liabilities": {
+      "total_liabilities": 92.77,
+      "current_liabilities": null,
+      "trade_payables": 5.0,
+      "short_term_borrowings": 25.0,
+      "long_term_borrowings": 31.0
+    },
+    "equity": {
+      "total_equity": 1119.1
+    },
+    "p_and_l": {
+      "revenue": null,
+      "net_profit": null,
+      "ebitda": null,
+      "interest_expense": null
+    }
+  },
+  "ratios_result": {
+    "ratios": {},
+    "status": "An error occurred during ratio calculation: list indices must be integers or slices, not str"
+  }
+}

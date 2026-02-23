@@ -1,0 +1,418 @@
+{
+  "session_id": "87fc10e9-8937-4d79-85ba-d78771777180",
+  "source": "pdf_extraction",
+  "version": "2.0-TableAI",
+  "timestamp": "2026-02-20T12:32:27.497187",
+  "identified_pages": [
+    0,
+    8
+  ],
+  "table_rows": [
+    {
+      "page_number": 1,
+      "rows": [
+        {
+          "Particulars": "Balance",
+          "Col_1": "Sheet",
+          "Col_2": "as",
+          "Col_3": "at",
+          "Col_4": "31",
+          "Col_5": "March,",
+          "Col_6": "2024",
+          "_numbers": [
+            31.0,
+            2024.0
+          ]
+        },
+        {
+          "Particulars": "Particulars",
+          "Col_1": "Note No.",
+          "Col_2": "As",
+          "Col_3": "at",
+          "Col_4": "31st March,",
+          "Col_5": "As",
+          "Col_6": "at",
+          "Col_7": "316t",
+          "Col_8": "March,",
+          "_numbers": [
+            31.0,
+            316.0
+          ]
+        },
+        {
+          "Particulars": "m24",
+          "Col_1": "2023",
+          "_numbers": [
+            2023.0
+          ]
+        },
+        {
+          "Particulars": "(a",
+          "Col_1": ")",
+          "Col_2": "Share",
+          "Col_3": "capital",
+          "Col_4": "3",
+          "Col_5": "5.00",
+          "Col_6": "5.00",
+          "_numbers": [
+            3.0,
+            5.0,
+            5.0
+          ]
+        },
+        {
+          "Particulars": "(t,",
+          "Col_1": ") Reserves",
+          "Col_2": "and",
+          "Col_3": "surplus",
+          "Col_4": "4",
+          "Col_5": "926.n",
+          "Col_6": "835.1",
+          "_numbers": [
+            4.0,
+            926.0,
+            835.1
+          ]
+        },
+        {
+          "Particulars": "(d",
+          "Col_1": ")",
+          "Col_2": "Long-term",
+          "Col_3": "borrowings",
+          "Col_4": "5",
+          "Col_5": "9.33",
+          "Col_6": "3",
+          "_numbers": [
+            5.0,
+            9.33,
+            3.0
+          ]
+        },
+        {
+          "Particulars": "(o",
+          "Col_1": ")",
+          "Col_2": "Short-term",
+          "Col_3": "borrowings",
+          "Col_4": "6",
+          "Col_5": "19.76",
+          "Col_6": "88.",
+          "_numbers": [
+            6.0,
+            19.76,
+            88.0
+          ]
+        },
+        {
+          "Particulars": "(b",
+          "Col_1": ")",
+          "Col_2": "Trade",
+          "Col_3": "paYables",
+          "Col_4": "7",
+          "Col_5": "715.66",
+          "Col_6": "196.",
+          "_numbers": [
+            7.0,
+            715.66,
+            196.0
+          ]
+        },
+        {
+          "Particulars": "(c",
+          "Col_1": "Other",
+          "Col_2": "current",
+          "Col_3": "liabilities",
+          "Col_4": "8",
+          "Col_5": "109.50",
+          "Col_6": "\"t1_6.63",
+          "_numbers": [
+            8.0,
+            109.5,
+            16.63
+          ]
+        },
+        {
+          "Particulars": "(ri",
+          "Col_1": ")",
+          "Col_2": "Short-term Provisions",
+          "Col_3": "I",
+          "Col_4": "25",
+          "Col_5": "31",
+          "_numbers": [
+            25.0,
+            31.0
+          ]
+        },
+        {
+          "Particulars": "TOTAL",
+          "Col_1": "t211.87",
+          "Col_2": "L277.8",
+          "_numbers": [
+            211.87,
+            277.8
+          ]
+        },
+        {
+          "Particulars": ":-",
+          "Col_1": "Property,",
+          "Col_2": "Plant & EquiPment",
+          "Col_3": "9",
+          "Col_4": "256.58",
+          "Col_5": "226.22",
+          "_numbers": [
+            9.0,
+            256.58,
+            226.22
+          ]
+        },
+        {
+          "Particulars": "t",
+          "Col_1": ")",
+          "Col_2": "Deferred",
+          "Col_3": "tax dssets",
+          "Col_4": "(net)",
+          "Col_5": ",.",
+          "Col_6": "t9",
+          "Col_7": "TW.95",
+          "Col_8": "'199.05",
+          "_numbers": [
+            9.0,
+            0.95,
+            199.05
+          ]
+        },
+        {
+          "Particulars": "(b)",
+          "Col_1": "Trade receivables",
+          "Col_2": "10",
+          "Col_3": "506.16",
+          "Col_4": "6'14.71,",
+          "_numbers": [
+            10.0,
+            506.16,
+            614.71
+          ]
+        },
+        {
+          "Particulars": "(c)",
+          "Col_1": "Cash",
+          "Col_2": "and",
+          "Col_3": "cash",
+          "Col_4": "equivalents",
+          "Col_5": "11",
+          "Col_6": "46.10",
+          "Col_7": "87.00",
+          "_numbers": [
+            11.0,
+            46.1,
+            87.0
+          ]
+        },
+        {
+          "Particulars": "(d)",
+          "Col_1": "Short-term",
+          "Col_2": "loans",
+          "Col_3": "and",
+          "Col_4": "advances",
+          "Col_5": "72",
+          "Col_6": "205.09",
+          "Col_7": "150.89",
+          "_numbers": [
+            72.0,
+            205.09,
+            150.89
+          ]
+        },
+        {
+          "Particulars": "(e)",
+          "Col_1": "Other",
+          "Col_2": "current",
+          "Col_3": "assets",
+          "Col_4": "rut",
+          "Col_5": ".00",
+          "Col_6": ".00",
+          "_numbers": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "Particulars": "FRN:",
+          "Col_1": "0015347N",
+          "Col_2": "*",
+          "Col_3": "*",
+          "_numbers": [
+            15347.0
+          ]
+        },
+        {
+          "Particulars": "Partner",
+          "Col_1": "DIN:",
+          "Col_2": "00391947",
+          "Col_3": "DIN:",
+          "Col_4": "01",
+          "_numbers": [
+            391947.0,
+            1.0
+          ]
+        },
+        {
+          "Particulars": "M.No.",
+          "Col_1": "093592",
+          "_numbers": [
+            93592.0
+          ]
+        },
+        {
+          "Particulars": "UDIN:",
+          "Col_1": "24093592BKC8KA6678",
+          "_numbers": [
+            2409359286678.0
+          ]
+        },
+        {
+          "Particulars": "Date",
+          "Col_1": "|",
+          "Col_2": "24.09.m24",
+          "_numbers": [
+            24.09
+          ]
+        }
+      ]
+    },
+    {
+      "page_number": 9,
+      "rows": [
+        {
+          "Particulars": "Note",
+          "Col_1": "21",
+          "Col_2": "Financial Ratios",
+          "_numbers": [
+            21.0
+          ]
+        },
+        {
+          "Particulars": "31 l,larch,",
+          "Col_1": "2{124",
+          "Col_2": "31",
+          "Col_3": "March. 2023",
+          "_numbers": [
+            2124.0,
+            31.0,
+            0.2023
+          ]
+        },
+        {
+          "Particulars": "(a)",
+          "Col_1": "Current",
+          "Col_2": "Ratio",
+          "Col_3": "2.80",
+          "Col_4": "!.97",
+          "_numbers": [
+            2.8,
+            0.97
+          ]
+        },
+        {
+          "Particulars": "(b)",
+          "Col_1": "Debt-Equity Ratio",
+          "Col_2": "0.03",
+          "Col_3": "0.11",
+          "_numbers": [
+            0.03,
+            0.11
+          ]
+        },
+        {
+          "Particulars": "(c)",
+          "Col_1": "Debt Service Coverage Ratio",
+          "Col_2": "44.42",
+          "Col_3": "96.42",
+          "_numbers": [
+            44.42,
+            96.42
+          ]
+        },
+        {
+          "Particulars": "(d)",
+          "Col_1": "Return on Equity Ratio",
+          "Col_2": "9.83o/o",
+          "Col_3": "13.640/o",
+          "_numbers": [
+            9.83,
+            13.64
+          ]
+        },
+        {
+          "Particulars": "(f)",
+          "Col_1": "Trade",
+          "Col_2": "Receivables",
+          "Col_3": "turnover ratio",
+          "Col_4": "1.06",
+          "Col_5": "1.12",
+          "_numbers": [
+            1.06,
+            1.12
+          ]
+        },
+        {
+          "Particulars": "(s)",
+          "Col_1": "Trade payables",
+          "Col_2": "turnover ratio",
+          "Col_3": "3.80",
+          "Col_4": "2.67",
+          "_numbers": [
+            3.8,
+            2.67
+          ]
+        },
+        {
+          "Particulars": "(h)",
+          "Col_1": "Net",
+          "Col_2": "capital",
+          "Col_3": "turnover ratio",
+          "Col_4": "4.88",
+          "Col_5": "4,76",
+          "_numbers": [
+            4.88,
+            476.0
+          ]
+        },
+        {
+          "Particulars": "(i)",
+          "Col_1": "Net",
+          "Col_2": "profit",
+          "Col_3": "ratio",
+          "Col_4": "0.04",
+          "Col_5": "0.06",
+          "_numbers": [
+            0.04,
+            0.06
+          ]
+        },
+        {
+          "Particulars": "(i)",
+          "Col_1": "Return on Capital employed",
+          "Col_2": "L2.L3o/o",
+          "Col_3": "lA.460/o",
+          "_numbers": [
+            2.3,
+            0.46
+          ]
+        },
+        {
+          "Particulars": "(k)",
+          "Col_1": "Reflrrn",
+          "Col_2": "on",
+          "Col_3": "investment",
+          "Col_4": "9.73o/o",
+          "Col_5": "13.570/o",
+          "_numbers": [
+            9.73,
+            13.57
+          ]
+        }
+      ]
+    }
+  ],
+  "content": "\n--- Page 1 ---\nCIGMAEVENTS PRIVATE LIMITED\nBalance Sheet as at 31 March, 2024\nAs at 316t March,\n2023\nAs at 31st March,\nm24\nRs. In Lakhs\nRs. In Lakhs\nNote No.\nParticulars\n3\n5.00\n835.1\n88.\n196.\n\"t1_6.63\n31\n9.33\n25\n5.00\n926.n\n19.76\n715.66\n109.50\n5\n3\n4\n6\n7\n8\nI. EQUITY AND LIABILITIES\n(1) Shareholders' funds\n(a ) Share capital\n(t, ) Reserves and surplus\n(c ) Money received against share waffants\n(2) Share application money pending Allotment\n(3) Non-current liabilities\n(d ) Long-term borrowings\n(h ) Deferred tax liabilities (Net)\n(4) Curent liabilities\n(o ) Short-term borrowings\n(b ) Trade paYables\n(c 1 Other current liabilities\n(ri ) Short-term Provisions\nt\nL277.8\nt211.87\nTOTAL\n'199.05\n226.22\n6'14.71,\n87.00\n150.89\n.00\n256.58\nTW.95\n506.16\n46.10\n205.09\n.00\nt9\n9\n10\n11\n72\nII. ASSETS\n(1) Non-current assets\n(a) Prope*y, Plant and Equipment and Intangible assets\n:- Property, Plant & EquiPment\n(1, ) Non-current investments \n,.\nt ) Deferred tax dssets (net)\n(2) CuEent assets\n(d ) Current investments\n(b) Trade receivables\n(c) Cash and cash equivalents\n(d) Short-term loans and advances\n(e) Other current assets\ntn7\nTOTAL\nora\n*\n*\nSee accompanying notes forming Part of the financial statements\nFor and on behalf of the Board of Directors\nPoonam Puri\nDIN: 01\nIn terms of our report attached.\nForKArora&Company\nUDIN: 24093592BKC8KA6678\nMan Mohan Chopra\nDirector\nDIN: 00391947\nPlace: New Delhi\nDate | 24.09.m24\nChartered Accoun\nFRN: 0015347N\nPartner\nM.No. 093592\nrut\nI\nI\nTOTAL\n\n--- Page 9 ---\nIcrcua EvENTS PRTVATE LlMrrED\nlNotes torminB pdrr ofthe findncial slalements\nThe following method has been adopted for calculation of above ratios!-\nCurrent Ratio i Total of current assets / Total of current liabilities.\nDebt-Equity Ratio : Debt / Equity.\nOebt Service Coverage Ratio ! EBITDA / Interest on borrowlngs.\nReturn on Equity Ratio ! Net Profit after Tax / Shareholders' funds.\nInventory turnovea aatio i Turnover / Average Inventory.\nI\nTrade R€ceivables turnover ratio : Turnover / Average Trade Receivables.\nTrade payables turnover ratio : Turnover / Average Trade payables.\nNet capital turnover ratio : Turnover / Net Capital.\nNet profit ratio i Net Profit / Turnover,\nReturn on Capital employed r Earnings before Interest and Taxes / Capital Employed,i.e., Equity + Debt.\nReturn on investment ! Net Profit after Tax / Capital Employed,i,e., Equity + Debt\no\nCt\nNote\nFor the year ended\n31 l,larch, 2{124\nFor the year ended\n31 March. 2023\n(a)\n(b)\n(c)\n(d)\n(e)\n(f)\n(s)\n(h)\n(i)\n(i)\n(k)\nCurrent Ratio\nDebt-Equity Ratio\nDebt Service Coverage Ratio\nReturn on Equity Ratio\nInventory turnover ratio\nTrade Receivables turnover ratio\nTrade payables turnover ratio\nNet capital turnover ratio\nNet profit ratio\nReturn on Capital employed\nReflrrn on investment\n2.80\n0.03\n44.42\n9.83o/o\nNA\n1.06\n3.80\n4.88\n0.04\nL2.L3o/o\n9.73o/o\n!.97\n0.11\n96.42\n13.640/o\n1.12\n2.67\n4,76\n0.06\nlA.460/o\n13.570/o\no\n*\nt\nc\nA\nNew\nsd\nNote 21 Financial Ratios\nPartiaularc\nNA\n"
+}

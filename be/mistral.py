@@ -37,32 +37,40 @@ In many Indian financial reports (like Dabur India Limited), the layout is:
 Particulars | Note | 31 March 2024 (Latest) | 31 March 2023 (Previous)
 You MUST skip the 'Note' column and pick the numbers from the '31 March 2024' column.
 
-Output the data in EXACTLY this JSON format:
+Output the data in EXACTLY this JSON format (following demo.json style):
 {
-  "year": "2024",
+  "company_details": {
+    "company_name": "...",
+    "cin": "...",
+    "balance_sheet_date": "DD-MM-YYYY",
+    "current_financial_year": "2024-25",
+    "previous_financial_year": "2023-24",
+    "currency": "INR"
+  },
+  "equity_and_liabilities": {
+    "shareholders_funds": [
+      { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
+    ],
+    "non_current_liabilities": [
+      { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
+    ],
+    "current_liabilities": [
+      { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
+    ]
+  },
   "assets": {
-    "total_assets": null,
-    "current_assets": null,
-    "cash_and_equivalents": null,
-    "inventories": null,
-    "trade_receivables": null,
-    "property_plant_equipment": null
-  },
-  "liabilities": {
-    "total_liabilities": null,
-    "current_liabilities": null,
-    "trade_payables": null,
-    "short_term_borrowings": null,
-    "long_term_borrowings": null
-  },
-  "equity": {
-    "total_equity": null
+    "non_current_assets": [
+      { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
+    ],
+    "current_assets": [
+      { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
+    ]
   },
   "p_and_l": {
-    "revenue": null,
-    "net_profit": null,
-    "ebitda": null,
-    "interest_expense": null
+    "revenue": { "current": X, "previous": X },
+    "net_profit": { "current": X, "previous": X },
+    "ebitda": { "current": X, "previous": X },
+    "interest_expense": { "current": X, "previous": X }
   }
 }
 
@@ -300,24 +308,29 @@ def simulate_extract_balance_sheet(ocr_text: str):
     expected by the app. This is intentionally conservative and non-ML.
     """
     out = {
-        "year": None,
+        "company_details": {
+            "company_name": None,
+            "cin": None,
+            "balance_sheet_date": None,
+            "current_financial_year": None,
+            "previous_financial_year": None,
+            "currency": "INR",
+        },
+        "equity_and_liabilities": {
+            "shareholders_funds": [],
+            "non_current_liabilities": [],
+            "current_liabilities": [],
+        },
         "assets": {
-            "total_assets": None,
-            "current_assets": None,
-            "cash_and_equivalents": None,
-            "inventories": None,
-            "trade_receivables": None,
-            "property_plant_equipment": None,
+            "non_current_assets": [],
+            "current_assets": [],
         },
-        "liabilities": {
-            "total_liabilities": None,
-            "current_liabilities": None,
-            "trade_payables": None,
-            "short_term_borrowings": None,
-            "long_term_borrowings": None,
+        "p_and_l": {
+            "revenue": {"current": None, "previous": None},
+            "net_profit": {"current": None, "previous": None},
+            "ebitda": {"current": None, "previous": None},
+            "interest_expense": {"current": None, "previous": None},
         },
-        "equity": {"total_equity": None},
-        "p_and_l": {"turnover": None, "net_profit": None, "ebitda": None, "interest_expense": None},
     }
 
     # Find year (first 4-digit year)

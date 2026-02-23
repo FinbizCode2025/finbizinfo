@@ -1,0 +1,65 @@
+{
+  "original_filepath": "uploads\\f3bd6370-09e3-49ec-80b7-a4d4e6d8aa8c_cigma_bs.pdf",
+  "balance_sheet_data": {
+    "year": "2024",
+    "assets": {
+      "total_assets": 7211.87,
+      "current_assets": null,
+      "cash_and_equivalents": 506.16,
+      "inventories": null,
+      "trade_receivables": 46.1,
+      "property_plant_equipment": 1199.05
+    },
+    "liabilities": {
+      "total_liabilities": null,
+      "current_liabilities": 1770.92,
+      "trade_payables": 19.76,
+      "short_term_borrowings": 926.0,
+      "long_term_borrowings": 25.0
+    },
+    "equity": {
+      "total_equity": 1062.1
+    },
+    "p_and_l": {
+      "revenue": null,
+      "net_profit": null,
+      "ebitda": null,
+      "interest_expense": null
+    }
+  },
+  "ratios_result": {
+    "ratios": {
+      "balance_sheet_summary": {
+        "total_equity": 13.64
+      },
+      "liquidity_ratios": {},
+      "solvency_ratios": {},
+      "capital_structure_ratios": {},
+      "efficiency_ratios": {},
+      "interpretation": {},
+      "activity_ratios": {},
+      "dupont_analysis": {},
+      "working_capital_ratios": {},
+      "valuation_ratios": {
+        "book_value_ratio": 0
+      },
+      "summary": {
+        "total_components_calculated": 2,
+        "total_ratio_categories": 9,
+        "categories": {
+          "liquidity": 0,
+          "solvency": 0,
+          "profitability": 0,
+          "activity": 0,
+          "capital_structure": 0,
+          "efficiency": 0,
+          "dupont": 0,
+          "working_capital": 0,
+          "valuation": 1
+        },
+        "status": "Comprehensive financial analysis with 40+ ratios calculated successfully."
+      }
+    },
+    "status": "Comprehensive financial analysis with 40+ ratios calculated successfully from the detected balance sheet and P&L data."
+  }
+}

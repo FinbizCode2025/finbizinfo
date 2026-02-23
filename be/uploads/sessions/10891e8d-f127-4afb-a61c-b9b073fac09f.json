@@ -1,0 +1,34 @@
+{
+  "original_filepath": "uploads\\10891e8d-f127-4afb-a61c-b9b073fac09f_dabur-standalone-financials.pdf",
+  "balance_sheet_data": {
+    "year": "2024",
+    "assets": {
+      "total_assets": null,
+      "current_assets": null,
+      "cash_and_equivalents": null,
+      "inventories": null,
+      "trade_receivables": null,
+      "property_plant_equipment": null
+    },
+    "liabilities": {
+      "total_liabilities": null,
+      "current_liabilities": null,
+      "trade_payables": null,
+      "short_term_borrowings": null,
+      "long_term_borrowings": null
+    },
+    "equity": {
+      "total_equity": null
+    },
+    "p_and_l": {
+      "revenue": null,
+      "net_profit": null,
+      "ebitda": null,
+      "interest_expense": null
+    }
+  },
+  "ratios_result": {
+    "ratios": {},
+    "status": "An error occurred during ratio calculation: name 're' is not defined"
+  }
+}

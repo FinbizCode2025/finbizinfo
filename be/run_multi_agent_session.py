@@ -15,6 +15,14 @@ def load_session(sid):
 def run_for_session(sid):
     session = load_session(sid)
     bs_data = session.get('balance_sheet_data')
+    
+    # Print balance sheet table as JSON
+    print("\n" + "="*50)
+    print("📊 BALANCE SHEET TABLE JSON (FROM SESSION)")
+    print("="*50)
+    print(json.dumps(bs_data, indent=2, ensure_ascii=False))
+    print("="*50 + "\n")
+
     pl_data = session.get('profit_and_loss') or {}
 
     orchestrator = AgentOrchestrator(max_workers=4)

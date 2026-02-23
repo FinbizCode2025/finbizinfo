@@ -1,0 +1,426 @@
+{
+  "session_id": "4b4c4659-c1e3-4f52-b78c-fcb3341f5a8f",
+  "source": "pdf_extraction",
+  "version": "2.0-TableAI",
+  "timestamp": "2026-02-20T11:51:10.439855",
+  "identified_pages": [
+    1,
+    3
+  ],
+  "table_rows": [
+    {
+      "page_number": 2,
+      "rows": [
+        {
+          "Particulars": "Godrej Industries Limited"
+        },
+        {
+          "Particulars": "Independent Auditor’s Report"
+        },
+        {
+          "Particulars": "To the Members of"
+        },
+        {
+          "Particulars": "Godrej Industries Limited"
+        },
+        {
+          "Particulars": "Report on the Audit of the Consolidated Ind-AS Financial Statements"
+        },
+        {
+          "Particulars": "Opinion"
+        },
+        {
+          "Particulars": "We have audited the accompanying Consolidated Ind-AS Financial Statements of",
+          "Col_1": "GODREJ INDUSTRIES LIMITED",
+          "Col_2": "(hereinafter"
+        },
+        {
+          "Particulars": "referred to as ‘the Holding Company’) and its subsidiaries (the Holding Company and its subsidiaries together referred to as"
+        },
+        {
+          "Particulars": "“the Group”), its associates and its joint ventures, which comprise the consolidated balance sheet as at March 31, 2024 and the"
+        },
+        {
+          "Particulars": "Consolidated Statement of Profit and Loss (including Other Comprehensive Income), the Consolidated Statement of Changes in"
+        },
+        {
+          "Particulars": "Equity and the Consolidated Statement of Cash Flows for the year then ended, and Notes to the Consolidated Ind-AS Financial"
+        },
+        {
+          "Particulars": "Statements including a summary of material accounting policies and other explanatory information (hereinafter referred to as “the"
+        },
+        {
+          "Particulars": "consolidated Ind-AS financial statements”)."
+        },
+        {
+          "Particulars": "In our opinion and to the best of our information and according to the explanations given to us, and based on the consideration"
+        },
+        {
+          "Particulars": "of the other auditors referred to in the Other Matters paragraph below, the aforesaid consolidated Ind-AS financial statements"
+        },
+        {
+          "Particulars": "give the information required by the Companies Act, 2013 (‘the Act’) in the manner so required and give a true and fair view"
+        },
+        {
+          "Particulars": "in conformity with the Indian Accounting Standards prescribed under section 133 of the Act read with the Companies (Indian"
+        },
+        {
+          "Particulars": "Accounting Standards) Rules, 2015, as amended,  (“Ind-AS”) and with the accounting principles generally accepted in India, of"
+        },
+        {
+          "Particulars": "the consolidated state of affairs of the Group, its associates and its joint ventures as at March 31, 2024, and of its consolidated"
+        },
+        {
+          "Particulars": "profit and other comprehensive income, consolidated changes in equity and consolidated cash flows for the year then ended."
+        },
+        {
+          "Particulars": "Basis for Opinion"
+        },
+        {
+          "Particulars": "We conducted our audit in accordance with the Standards on Auditing (SAs) specified under Section 143 (10) of the Act. Our"
+        },
+        {
+          "Particulars": "responsibilities under those SAs are further described in the Auditor’s Responsibilities for the Audit of the Consolidated Ind-AS"
+        },
+        {
+          "Particulars": "Financial Statements section of our report. We are independent of the Group, its associates and its joint ventures in accordance"
+        },
+        {
+          "Particulars": "with the ethical requirements that are relevant to our audit of the consolidated Ind-AS financial statements in terms of the Code"
+        },
+        {
+          "Particulars": "of Ethics issued by the Institute of Chartered Accountants of India and the relevant provisions of the Act, and we have fulfilled"
+        },
+        {
+          "Particulars": "our other ethical responsibilities in accordance with these requirements. We believe that the audit evidence we have obtained"
+        },
+        {
+          "Particulars": "along with the consideration of audit reports of the other auditors referred to in paragraphs in the ‘Other Matters’ section below,"
+        },
+        {
+          "Particulars": "is sufficient and appropriate to provide a basis for our opinion."
+        },
+        {
+          "Particulars": "Key Audit Matter"
+        },
+        {
+          "Particulars": "Key audit matters are those matters that, in our professional judgment were of most significance in our audit of the consolidated Ind-"
+        },
+        {
+          "Particulars": "AS financial statements of the current period. These matters were addressed in the context of our audit of the consolidated Ind-AS"
+        },
+        {
+          "Particulars": "financial statements as a whole, and in forming our opinion thereon, and we do not provide a separate opinion on these matters."
+        },
+        {
+          "Particulars": "We have determined the matters described below to be the key audit matters to be communicated in our report."
+        },
+        {
+          "Particulars": "Description of Key Audit Matter"
+        },
+        {
+          "Particulars": "Revenue recognition from sale of goods"
+        },
+        {
+          "Particulars": "(refer note 2.18 and 29 to the consolidated Ind-AS financial statements)"
+        },
+        {
+          "Particulars": "Key Audit Matter",
+          "Col_1": "How the matter was addressed in our audit"
+        },
+        {
+          "Particulars": "In case of the Holding Company, as per IND AS 115 -",
+          "Col_1": "Our audit procedures to assess revenue recognition from sale of goods"
+        },
+        {
+          "Particulars": "‘Revenue from Contracts with Customers’ revenue is",
+          "Col_1": "included the following:"
+        },
+        {
+          "Particulars": "recognized on transfer of control of goods or services"
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Assessed the compliance of the revenue recognition accounting"
+        },
+        {
+          "Particulars": "to a customer, which is on dispatch / delivery as per"
+        },
+        {
+          "Particulars": "policies by comparing with Ind AS 115 - “Revenue from Contracts"
+        },
+        {
+          "Particulars": "the terms of contracts, at an amount that reflects the"
+        },
+        {
+          "Particulars": "with Customers”."
+        },
+        {
+          "Particulars": "consideration to which the Company is expected to be"
+        },
+        {
+          "Particulars": "entitled to in exchange for those goods or services.",
+          "Col_1": "•",
+          "Col_2": "Understood and evaluated the design implementation and tested"
+        },
+        {
+          "Particulars": "the operating effectiveness of key controls relating to revenue"
+        },
+        {
+          "Particulars": "recognition."
+        },
+        {
+          "Particulars": "Revenue recognition includes determination of pricing,",
+          "Col_1": "•",
+          "Col_2": "Tested the design, implementation and operating effectiveness of"
+        },
+        {
+          "Particulars": "effect of discounts, sales returns and adjustments for",
+          "Col_1": "the Company’s key General Information Technology (IT) controls"
+        },
+        {
+          "Particulars": "freight reimbursements.",
+          "Col_1": "and key IT application controls over the Company’s systems for"
+        },
+        {
+          "Particulars": "revenue recognition, by involving our IT specialists."
+        },
+        {
+          "Particulars": "130"
+        }
+      ]
+    },
+    {
+      "page_number": 4,
+      "rows": [
+        {
+          "Particulars": "Godrej Industries Limited"
+        },
+        {
+          "Particulars": "Independent Auditor’s Report"
+        },
+        {
+          "Particulars": "Description of Key Audit Matter (Continued)"
+        },
+        {
+          "Particulars": "Revenue recognition from sale of residential and commercial units"
+        },
+        {
+          "Particulars": "(refer notes 2.19, 29 and 57 to the consolidated Ind-AS financial statements)"
+        },
+        {
+          "Particulars": "Key Audit Matter",
+          "Col_1": "How the matter was addressed in our audit"
+        },
+        {
+          "Particulars": "Certain of the Holding Company’s subsidiaries’",
+          "Col_1": "Audit procedures performed by the auditors of the subsidiaries included"
+        },
+        {
+          "Particulars": "revenue",
+          "Col_1": "streams",
+          "Col_2": "involve",
+          "Col_3": "sale",
+          "Col_4": "of",
+          "Col_5": "residential,",
+          "Col_6": "the following:"
+        },
+        {
+          "Particulars": "commercial units and plots and other lands."
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Obtaining and understanding revenue recognition process"
+        },
+        {
+          "Particulars": "Revenue is recognised post transfer of control to",
+          "Col_1": "including",
+          "Col_2": "identification",
+          "Col_3": "of",
+          "Col_4": "performance",
+          "Col_5": "obligations",
+          "Col_6": "and"
+        },
+        {
+          "Particulars": "customers for the consideration (transaction price)",
+          "Col_1": "determination of transfer of control of the asset underlying the"
+        },
+        {
+          "Particulars": "which the subsidiaries expects to receive in exchange",
+          "Col_1": "performance obligation to the customer."
+        },
+        {
+          "Particulars": "for those units. The trigger for revenue recognition"
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Evaluating the design and implementation and tested operating"
+        },
+        {
+          "Particulars": "is normally completion of the project or receipt of"
+        },
+        {
+          "Particulars": "effectiveness of key internal controls around approvals of"
+        },
+        {
+          "Particulars": "approvals on completion from relevant authorities post"
+        },
+        {
+          "Particulars": "contracts, milestone billing, intimation of receipt of occupation"
+        },
+        {
+          "Particulars": "which the contract becomes non-cancellable. The"
+        },
+        {
+          "Particulars": "certificate, recording of project cost and controls over collection"
+        },
+        {
+          "Particulars": "subsidiaries record revenue, over time till the actual"
+        },
+        {
+          "Particulars": "from customers."
+        },
+        {
+          "Particulars": "possession to the customers, or on actual possession"
+        },
+        {
+          "Particulars": "to the customers, as determined by the terms of",
+          "Col_1": "•",
+          "Col_2": "Evaluating the accounting policies adopted by the subsidiaries for"
+        },
+        {
+          "Particulars": "contract with customers.",
+          "Col_1": "revenue recognition to check those are in line with the applicable"
+        },
+        {
+          "Particulars": "accounting standards and their consistent application to the"
+        },
+        {
+          "Particulars": "Measurement of revenue recorded over time"
+        },
+        {
+          "Particulars": "significant sales contracts."
+        },
+        {
+          "Particulars": "which is dependent on the estimates of the costs"
+        },
+        {
+          "Particulars": "to complete.",
+          "Col_1": "•",
+          "Col_2": "Testing timeliness of revenue recognition by comparing individual"
+        },
+        {
+          "Particulars": "sample sales transactions to underlying contracts."
+        },
+        {
+          "Particulars": "Revenue recognition involves significant estimates"
+        },
+        {
+          "Particulars": "related to measurement of costs to complete for the",
+          "Col_1": "•",
+          "Col_2": "Conducting site visits during the year for selected projects to"
+        },
+        {
+          "Particulars": "projects. Revenue from projects is recorded based on",
+          "Col_1": "understand the scope, nature and progress of the projects."
+        },
+        {
+          "Particulars": "the subsidiaries’ assessment of the work completed,"
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Evaluating revenue overstatement by assessing Group’s key"
+        },
+        {
+          "Particulars": "costs incurred and accrued and the estimate of the"
+        },
+        {
+          "Particulars": "judgments in interpreting contractual terms. Determining the"
+        },
+        {
+          "Particulars": "balance costs to complete."
+        },
+        {
+          "Particulars": "point in time at which the control is transferred by evaluating"
+        },
+        {
+          "Particulars": "Considering the significant estimate involved in",
+          "Col_1": "subsidiaries’ in-house legal interpretations of the underlying"
+        },
+        {
+          "Particulars": "measurement of revenue and risk of revenue being",
+          "Col_1": "agreements i.e. when contract becomes non-cancellable."
+        },
+        {
+          "Particulars": "recognised in an incorrect period, revenue recognition"
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Requesting confirmations, on a sample basis for trade"
+        },
+        {
+          "Particulars": "is considered as a key audit matter."
+        },
+        {
+          "Particulars": "receivables and advances from customer. In case of non-receipt"
+        },
+        {
+          "Particulars": "of confirmations, alternative procedures have been performed"
+        },
+        {
+          "Particulars": "by comparing details with contracts, collection details and other"
+        },
+        {
+          "Particulars": "underlying project related documentation."
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Assessing the costs incurred and accrued to date on the balance"
+        },
+        {
+          "Particulars": "sheet by examining underlying invoices and signed agreements"
+        },
+        {
+          "Particulars": "on a sample basis. Assessing contract costs to check no costs of"
+        },
+        {
+          "Particulars": "revenue nature are incorrectly recorded in the balance sheet."
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Comparing, on a sample basis, revenue transactions recorded"
+        },
+        {
+          "Particulars": "during the year with the underlying contracts, progress reports,"
+        },
+        {
+          "Particulars": "invoices raised on customers and collections in bank accounts."
+        },
+        {
+          "Particulars": "Also, checked the related revenue had been recognised in"
+        },
+        {
+          "Particulars": "accordance with the subsidiaries’ revenue recognition policies."
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Comparing the costs to complete workings with the budgeted"
+        },
+        {
+          "Particulars": "costs and inquiring for variance."
+        },
+        {
+          "Particulars": "•",
+          "Col_1": "Sighting Group’s internal approvals, on sample basis, for changes"
+        },
+        {
+          "Particulars": "in budgeted costs along with the rationale for the changes."
+        },
+        {
+          "Particulars": "132"
+        }
+      ]
+    }
+  ],
+  "content": "\n--- Page 2 ---\n130\nGodrej Industries Limited\nIndependent Auditor’s Report\nTo the Members of\nGodrej Industries Limited\nReport on the Audit of the Consolidated Ind-AS Financial Statements\nOpinion\nWe have audited the accompanying Consolidated Ind-AS Financial Statements of GODREJ INDUSTRIES LIMITED (hereinafter \nreferred to as ‘the Holding Company’) and its subsidiaries (the Holding Company and its subsidiaries together referred to as \n“the Group”), its associates and its joint ventures, which comprise the consolidated balance sheet as at March 31, 2024 and the \nConsolidated Statement of Profit and Loss (including Other Comprehensive Income), the Consolidated Statement of Changes in \nEquity and the Consolidated Statement of Cash Flows for the year then ended, and Notes to the Consolidated Ind-AS Financial \nStatements including a summary of material accounting policies and other explanatory information (hereinafter referred to as “the \nconsolidated Ind-AS financial statements”).\nIn our opinion and to the best of our information and according to the explanations given to us, and based on the consideration \nof the other auditors referred to in the Other Matters paragraph below, the aforesaid consolidated Ind-AS financial statements \ngive the information required by the Companies Act, 2013 (‘the Act’) in the manner so required and give a true and fair view \nin conformity with the Indian Accounting Standards prescribed under section 133 of the Act read with the Companies (Indian \nAccounting Standards) Rules, 2015, as amended,  (“Ind-AS”) and with the accounting principles generally accepted in India, of \nthe consolidated state of affairs of the Group, its associates and its joint ventures as at March 31, 2024, and of its consolidated \nprofit and other comprehensive income, consolidated changes in equity and consolidated cash flows for the year then ended.\nBasis for Opinion\nWe conducted our audit in accordance with the Standards on Auditing (SAs) specified under Section 143 (10) of the Act. Our \nresponsibilities under those SAs are further described in the Auditor’s Responsibilities for the Audit of the Consolidated Ind-AS \nFinancial Statements section of our report. We are independent of the Group, its associates and its joint ventures in accordance \nwith the ethical requirements that are relevant to our audit of the consolidated Ind-AS financial statements in terms of the Code \nof Ethics issued by the Institute of Chartered Accountants of India and the relevant provisions of the Act, and we have fulfilled \nour other ethical responsibilities in accordance with these requirements. We believe that the audit evidence we have obtained \nalong with the consideration of audit reports of the other auditors referred to in paragraphs in the ‘Other Matters’ section below, \nis sufficient and appropriate to provide a basis for our opinion.\nKey Audit Matter\nKey audit matters are those matters that, in our professional judgment were of most significance in our audit of the consolidated Ind-\nAS financial statements of the current period. These matters were addressed in the context of our audit of the consolidated Ind-AS \nfinancial statements as a whole, and in forming our opinion thereon, and we do not provide a separate opinion on these matters.\nWe have determined the matters described below to be the key audit matters to be communicated in our report.\nDescription of Key Audit Matter\nRevenue recognition from sale of goods\n(refer note 2.18 and 29 to the consolidated Ind-AS financial statements)\nKey Audit Matter\nHow the matter was addressed in our audit\nIn case of the Holding Company, as per IND AS 115 - \n‘Revenue from Contracts with Customers’ revenue is \nrecognized on transfer of control of goods or services \nto a customer, which is on dispatch / delivery as per \nthe terms of contracts, at an amount that reflects the \nconsideration to which the Company is expected to be \nentitled to in exchange for those goods or services.\nOur audit procedures to assess revenue recognition from sale of goods \nincluded the following:\n• \nAssessed the compliance of the revenue recognition accounting \npolicies by comparing with Ind AS 115 - “Revenue from Contracts \nwith Customers”.\n• \nUnderstood and evaluated the design implementation and tested \nthe operating effectiveness of key controls relating to revenue \nrecognition.\nRevenue recognition includes determination of pricing, \neffect of discounts, sales returns and adjustments for \nfreight reimbursements.\n• \nTested the design, implementation and operating effectiveness of \nthe Company’s key General Information Technology (IT) controls \nand key IT application controls over the Company’s systems for \nrevenue recognition, by involving our IT specialists.\n\n--- Page 4 ---\n132\nGodrej Industries Limited\nRevenue recognition from sale of residential and commercial units\n(refer notes 2.19, 29 and 57 to the consolidated Ind-AS financial statements)\nKey Audit Matter\nHow the matter was addressed in our audit\nCertain of the Holding Company’s subsidiaries’ \nrevenue \nstreams \ninvolve \nsale \nof \nresidential, \ncommercial units and plots and other lands.\nRevenue is recognised post transfer of control to \ncustomers for the consideration (transaction price) \nwhich the subsidiaries expects to receive in exchange \nfor those units. The trigger for revenue recognition \nis normally completion of the project or receipt of \napprovals on completion from relevant authorities post \nwhich the contract becomes non-cancellable. The \nsubsidiaries record revenue, over time till the actual \npossession to the customers, or on actual possession \nto the customers, as determined by the terms of \ncontract with customers.\nMeasurement of revenue recorded over time \nwhich is dependent on the estimates of the costs \nto complete.\nRevenue recognition involves significant estimates \nrelated to measurement of costs to complete for the \nprojects. Revenue from projects is recorded based on \nthe subsidiaries’ assessment of the work completed, \ncosts incurred and accrued and the estimate of the \nbalance costs to complete.\nConsidering the significant estimate involved in \nmeasurement of revenue and risk of revenue being \nrecognised in an incorrect period, revenue recognition \nis considered as a key audit matter.\nAudit procedures performed by the auditors of the subsidiaries included \nthe following:\n• \nObtaining and understanding revenue recognition process \nincluding \nidentification \nof \nperformance \nobligations \nand \ndetermination of transfer of control of the asset underlying the \nperformance obligation to the customer.\n• \nEvaluating the design and implementation and tested operating \neffectiveness of key internal controls around approvals of \ncontracts, milestone billing, intimation of receipt of occupation \ncertificate, recording of project cost and controls over collection \nfrom customers.\n• \nEvaluating the accounting policies adopted by the subsidiaries for \nrevenue recognition to check those are in line with the applicable \naccounting standards and their consistent application to the \nsignificant sales contracts.\n• \nTesting timeliness of revenue recognition by comparing individual \nsample sales transactions to underlying contracts.\n• \nConducting site visits during the year for selected projects to \nunderstand the scope, nature and progress of the projects.\n• \nEvaluating revenue overstatement by assessing Group’s key \njudgments in interpreting contractual terms. Determining the \npoint in time at which the control is transferred by evaluating \nsubsidiaries’ in-house legal interpretations of the underlying \nagreements i.e. when contract becomes non-cancellable.\n• \nRequesting confirmations, on a sample basis for trade \nreceivables and advances from customer. In case of non-receipt \nof confirmations, alternative procedures have been performed \nby comparing details with contracts, collection details and other \nunderlying project related documentation.\n• \nAssessing the costs incurred and accrued to date on the balance \nsheet by examining underlying invoices and signed agreements \non a sample basis. Assessing contract costs to check no costs of \nrevenue nature are incorrectly recorded in the balance sheet.\n• \nComparing, on a sample basis, revenue transactions recorded \nduring the year with the underlying contracts, progress reports, \ninvoices raised on customers and collections in bank accounts. \nAlso, checked the related revenue had been recognised in \naccordance with the subsidiaries’ revenue recognition policies.\n• \nComparing the costs to complete workings with the budgeted \ncosts and inquiring for variance.\n• \nSighting Group’s internal approvals, on sample basis, for changes \nin budgeted costs along with the rationale for the changes.\nIndependent Auditor’s Report\nDescription of Key Audit Matter (Continued)\n"
+}
