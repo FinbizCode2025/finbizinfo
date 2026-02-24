@@ -11,7 +11,123 @@ import ComprehensiveFinancialReport from './components/ComprehensiveFinancialRep
 import MultiAgentAnalysis from './components/MultiAgentAnalysis'; // Multi-agent system component
 import PeerComparison from './PeerComparison.jsx';
 
+// ─── FinancialRatioDisplay ───────────────────────────────────────────────────
+// Renders the flat ratios payload from the backend in clean grouped tables.
+// Accepts { ratios: {current_ratio, debt_ratio, ...}, ratios_grouped: {...}, status, ... }
+const FinancialRatioDisplay: React.FC<{ data: any }> = ({ data }) => {
+  if (!data) return <div className="text-gray-500">No ratio data available.</div>;
 
+  const ratios = data.ratios || data;
+  if (!ratios || typeof ratios !== 'object') return <div className="text-gray-500">No ratio data.</div>;
+
+  // Group definitions for display
+  const groups: { label: string; icon: string; keys: string[] }[] = [
+    {
+      label: 'Balance Sheet Summary',
+      icon: '📋',
+      keys: ['total_assets', 'total_liabilities', 'total_equity', 'current_assets', 'current_liabilities', 'non_current_assets', 'non_current_liabilities'],
+    },
+    {
+      label: 'Liquidity Ratios',
+      icon: '💧',
+      keys: ['current_ratio', 'quick_ratio', 'cash_ratio', 'working_capital', 'working_capital_ratio'],
+    },
+    {
+      label: 'Solvency / Leverage Ratios',
+      icon: '⚖️',
+      keys: ['debt_ratio', 'debt_to_equity', 'equity_ratio', 'long_term_debt_to_equity', 'assets_to_liabilities', 'leverage_ratio', 'current_liabilities_ratio', 'long_term_liabilities_ratio'],
+    },
+    {
+      label: 'Capital Structure Ratios',
+      icon: '🏗️',
+      keys: ['equity_multiplier', 'retention_ratio', 'long_term_debt_ratio', 'debt_to_assets', 'equity_to_debt'],
+    },
+    {
+      label: 'Efficiency Ratios',
+      icon: '⚡',
+      keys: ['asset_base', 'receivables_to_current_assets', 'current_assets_ratio', 'fixed_assets_ratio', 'asset_turnover', 'inventory_turnover', 'receivables_turnover'],
+    },
+    {
+      label: 'Profitability Ratios',
+      icon: '📈',
+      keys: ['net_margin', 'gross_margin', 'operating_margin', 'roa', 'roe', 'return_on_equity', 'return_on_assets', 'net_profit_margin', 'gross_profit_margin'],
+    },
+  ];
+
+  const formatVal = (key: string, val: any): string => {
+    if (val === null || val === undefined) return 'N/A';
+    const num = typeof val === 'number' ? val : parseFloat(String(val));
+    if (isNaN(num)) return String(val);
+    // Large absolute values → currency-style
+    if (Math.abs(num) > 1000) return num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    // Percentages (ratio keys containing margin, ratio, return, etc.)
+    const pctKeys = ['margin', 'roa', 'roe', 'return', '_ratio', 'ratio'];
+    if (pctKeys.some(k => key.toLowerCase().includes(k)) && Math.abs(num) <= 10) {
+      return (num * 100).toFixed(2) + '%';
+    }
+    return num.toFixed(4);
+  };
+
+  const renderedGroups = groups.map(g => {
+    const rows = g.keys
+      .filter(k => ratios[k] !== undefined && ratios[k] !== null)
+      .map(k => ({ key: k, val: ratios[k] }));
+    return { ...g, rows };
+  }).filter(g => g.rows.length > 0);
+
+  if (renderedGroups.length === 0) {
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded text-yellow-800">
+        Ratios were calculated but no displayable values were found.
+        <pre className="text-xs mt-2 overflow-auto max-h-60">{JSON.stringify(ratios, null, 2)}</pre>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {data.status && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded text-green-800 text-sm font-medium">
+          ✅ {data.status}
+        </div>
+      )}
+      {renderedGroups.map(g => (
+        <div key={g.label}>
+          <h3 className="text-base font-bold text-gray-700 mb-2">{g.icon} {g.label}</h3>
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+                  <th className="px-4 py-2 text-left font-semibold">Metric</th>
+                  <th className="px-4 py-2 text-right font-semibold">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {g.rows.map((r, i) => (
+                  <tr key={r.key} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-4 py-2 text-gray-700">
+                      {r.key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </td>
+                    <td className="px-4 py-2 text-right font-mono text-gray-800">
+                      {formatVal(r.key, r.val)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+      {data.ratios?.ai_grounded_analysis && (
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h3 className="font-bold text-blue-800 mb-2">🤖 AI Analysis</h3>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap">{data.ratios.ai_grounded_analysis}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+// ────────────────────────────────────────────────────────────────────────────
 
 // --- Type Definitions ---
 
@@ -234,6 +350,20 @@ const ReportSection: React.FC<ReportSectionProps> = ({ endpoint, sessionId, titl
         { headers: { 'Content-Type': 'application/json' } }
       );
 
+      // For financial-ratio endpoint, store the entire response so AutoTable
+      // can access both response.ratios and balance_sheet_data.
+      if (endpoint.includes('financial-ratio')) {
+        const fullResp = res.data; // {response: {ratios:{...}, status:"..."}, balance_sheet_data:[...]}
+        if (fullResp && typeof fullResp === 'object') {
+          setData(fullResp);
+          if (onDataUpdate) onDataUpdate(fullResp);
+        } else {
+          setError('No data found in financial ratio response.');
+          if (onDataUpdate) onDataUpdate(null);
+        }
+        return;
+      }
+
       const resp = res.data.response;
       if (resp && typeof resp === 'object') {
         setData(resp);
@@ -300,11 +430,13 @@ const ReportSection: React.FC<ReportSectionProps> = ({ endpoint, sessionId, titl
     setIsLoading(false);
   };
 
-  // Check if this is a financial ratio response (be tolerant of different backend shapes)
-  // data might be the raw response object {response: {...}, balance_sheet_data: [...]}
-  // or it might be just the response payload
-  const actualData = data?.response || data;
-  const isFinancialRatio = endpoint.includes('financial-ratio') && (
+  // For financial-ratio endpoint, data is {response:{ratios:{...},status:"..."}, balance_sheet_data:[...]}
+  // For other endpoints, data is the response object directly.
+  const isFinancialRatioEndpoint = endpoint.includes('financial-ratio');
+  // The inner payload with ratios
+  const ratioPayload = isFinancialRatioEndpoint ? (data?.response || data) : data;
+  const actualData = ratioPayload;
+  const isFinancialRatio = isFinancialRatioEndpoint && (
     Boolean(actualData?.ratios) || Boolean(actualData?.financial_ratios) || Boolean(actualData?.ratio) || Boolean(actualData?.liquidity_ratios) || Boolean(actualData?.current_ratio)
   );
 
@@ -317,22 +449,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({ endpoint, sessionId, titl
       >
         {isLoading ? 'Generating...' : `Generate ${title}`}
       </button>
-      <button
-        onClick={fetchDebugAnalyze}
-        className="ml-2 px-3 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-semibold shadow transition disabled:opacity-50"
-        disabled={isLoading || !sessionId}
-        title="Run AI+deterministic extractor and compute ratios for debugging"
-      >
-        🔍 AI Extract & Compute
-      </button>
-      <button
-        onClick={searchCompanyWeb}
-        className="ml-2 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-semibold shadow transition disabled:opacity-50"
-        disabled={isLoading || !sessionId}
-        title="Search the web for this company and merge with PDF data"
-      >
-        🌐 Search Web
-      </button>
+      {/* Extra debug/search buttons removed - only primary generate button remains */}
 
       {isFinancialRatio && data && (
         <div className="flex gap-2 mt-4 mb-4">
@@ -366,10 +483,14 @@ const ReportSection: React.FC<ReportSectionProps> = ({ endpoint, sessionId, titl
       {data && (
         <div className="mt-4">
           {isFinancialRatio && viewMode === 'detailed' ? (
-            <RatioDetails ratios={flattenRatios(actualData.ratios)} />
+            <RatioDetails ratios={flattenRatios(actualData?.ratios)} />
           ) : (
             <div className="p-4 bg-white border border-gray-300 rounded-lg shadow-md overflow-auto">
-              <AutoTable data={actualData} />
+              {isFinancialRatio ? (
+                <FinancialRatioDisplay data={actualData} />
+              ) : (
+                <AutoTable data={actualData} />
+              )}
             </div>
           )}
           {/* Debug panel: show deterministic fallback ratios and extracted numbers for transparency */}
@@ -834,12 +955,6 @@ const App: React.FC = () => {
   // Upload handler
   const handleUpload = async (selectedFile: File) => {
     setFile(selectedFile);
-
-    if (!apiKeyInput.trim()) {
-      setUploadStatus('Please save your Google API key before uploading.');
-      return;
-    }
-
     setUploadStatus('Uploading and indexing...');
     const formData = new FormData();
     formData.append('file', selectedFile);

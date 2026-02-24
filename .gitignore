@@ -39,3 +39,7 @@ Thumbs.db
 # Backend venv
 be/env/
 be/venv/
+backend/env/
+backend/venv/
+backend/uploads/
+backend/__pycache__

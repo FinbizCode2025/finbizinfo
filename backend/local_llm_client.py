@@ -51,31 +51,39 @@ def extract_financials(text_content):
       }},
       "equity_and_liabilities": {{
         "shareholders_funds": [
-          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+          { "particular": "Share Capital", "note_no": 1, "current_year": 10000000, "previous_year": 10000000 },
+          { "particular": "Reserves and Surplus", "note_no": 2, "current_year": 5000000, "previous_year": 4500000 }
         ],
         "non_current_liabilities": [
-          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+          { "particular": "Long-term Borrowings", "note_no": 3, "current_year": 2000000, "previous_year": 2500000 }
         ],
         "current_liabilities": [
-          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+          { "particular": "Trade Payables", "note_no": 4, "current_year": 1500000, "previous_year": 1000000 },
+          { "particular": "Short-term Borrowings", "note_no": 5, "current_year": 500000, "previous_year": 600000 }
         ]
-      }},
-      "assets": {{
+      },
+      "assets": {
         "non_current_assets": [
-          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+          { "particular": "Property, Plant & Equipment", "note_no": 6, "current_year": 8000000, "previous_year": 8500000 }
         ],
         "current_assets": [
-          {{ "particular": "...", "note_no": X, "current_year": X, "previous_year": X }}
+          { "particular": "Cash and Cash Equivalents", "note_no": 7, "current_year": 500000, "previous_year": 300000 },
+          { "particular": "Trade Receivables", "note_no": 8, "current_year": 3000000, "previous_year": 2700000 },
+          { "particular": "Inventory", "note_no": 9, "current_year": 2000000, "previous_year": 1800000 }
         ]
       }}
     }}
     
     Rules:
-    1. Extract all line items from the balance sheet.
-    2. Use absolute numbers. Remove commas, currency symbols, and handle scale (Lakhs/Crores).
-    3. If a value is not found, use null.
-    4. Ensure 'particular' names are descriptive and match the document.
-    5. Return ONLY the raw JSON block.
+    1. Extract ALL line items from the balance sheet (at least 5-10 items per section).
+    2. For EVERY item:
+       - 'particular': Use the ACTUAL line item name from the document (NOT empty, NOT dates)
+       - 'current_year': ONLY numeric amount (remove "Lakhs", "Crores", commas). Never include dates like "21-03-24"
+       - 'previous_year': ONLY numeric amount if available
+    3. If a numeric value is not found, use null (NOT dates, NOT text).
+    4. Scale conversion: "1.5 Lakhs" → 150000, "2 Crores" → 20000000
+    5. If balance sheet has multiple columns, map each correctly to current_year/previous_year.
+    6. Return ONLY the raw JSON block (no markdown, no explanations).
 
     TEXT CONTENT:
     {text_content[:25000]}

@@ -28,7 +28,7 @@ DPI = 300
 # ----------------------------------------
 
 PROMPT = """
-Extract the balance sheet for the latest and previous financial years.
+Extract the balance sheet and profit and loss statement for the latest and previous financial years.
 The PDF typically contains multiple years (e.g., 2024 and 2023).
 CRITICAL RULE: Extract data for BOTH the LATEST financial year AND the PREVIOUS financial year if available.
 
@@ -57,6 +57,12 @@ Output the data in EXACTLY this JSON format (following demo.json style):
     "current_liabilities": [
       { "particular": "...", "note_no": X, "current_year": X, "previous_year": X }
     ]
+  },
+  "profit_and_loss": {
+    "revenue": { "particular": "Revenue from Operations", "current_year": X, "previous_year": X },
+    "net_profit": { "particular": "Profit for the Year", "current_year": X, "previous_year": X },
+    "ebitda": { "particular": "EBITDA", "current_year": X, "previous_year": X },
+    "interest_expense": { "particular": "Finance Costs", "current_year": X, "previous_year": X }
   },
   "assets": {
     "non_current_assets": [
@@ -176,7 +182,7 @@ def ask_ollama(prompt, img_b64):
         return f"[Request Failed] {str(e)}"
 
 
-def run_ocr(image_path):
+def run_ocr(image_path, skip_tables=False):
     resize_image_safe(image_path)
 
     with open(image_path, "rb") as f:
@@ -184,11 +190,13 @@ def run_ocr(image_path):
 
     text = ask_ollama("Text Recognition:", img_b64)
 
-    try:
-        tables_md = ask_ollama("Table Recognition:", img_b64)
-        tables_html = markdown.markdown(tables_md, extensions=["tables"])
-    except Exception:
-        tables_html = "<p><i>Table extraction skipped (too large or failed)</i></p>"
+    tables_html = ""
+    if not skip_tables:
+        try:
+            tables_md = ask_ollama("Table Recognition:", img_b64)
+            tables_html = markdown.markdown(tables_md, extensions=["tables"])
+        except Exception:
+            tables_html = "<p><i>Table extraction skipped (too large or failed)</i></p>"
 
     return text, tables_html
 
@@ -441,66 +449,98 @@ def extract_balance_sheet(ocr_text, client):
 
 
 def calculate_financial_ratios(data):
-    ratios = {}
+    """
+    Calculates financial ratios from the new structured JSON format (demo.json style).
+    Handles 'equity_and_liabilities' and 'assets' sections where each sub-category
+    is a list of objects with 'current_year' and 'previous_year' fields.
+    """
+    def sum_year(items, year_key):
+        total = 0.0
+        if not items or not isinstance(items, list):
+            return 0.0
+        for item in items:
+            val = item.get(year_key)
+            if isinstance(val, (int, float)):
+                total += float(val)
+        return total
 
-    A = data.get("assets", {})
-    L = data.get("liabilities", {})
-    E = data.get("equity", {})
-
-    def safe_div(a, b):
-        if a is None or b in (None, 0):
+    def find_particular(items, keywords, year_key):
+        if not items or not isinstance(items, list):
             return None
-        return round(a / b, 4)
+        for item in items:
+            p = str(item.get("particular", "")).lower()
+            if any(k in p for k in keywords):
+                return item.get(year_key)
+        return None
 
-    ratios["current_ratio"] = safe_div(
-        A.get("current_assets"), L.get("current_liabilities")
-    )
-    ratios["quick_ratio"] = safe_div(
-        (A.get("cash_and_equivalents") or 0) + (A.get("trade_receivables") or 0),
-        L.get("current_liabilities"),
-    )
-    ratios["debt_to_equity"] = safe_div(
-        L.get("total_liabilities"), E.get("total_equity")
-    )
-    ratios["debt_to_assets"] = safe_div(
-        L.get("total_liabilities"), A.get("total_assets")
-    )
-    ratios["equity_ratio"] = safe_div(E.get("total_equity"), A.get("total_assets"))
-    ratios["roe"] = safe_div(
-        data.get("p_and_l", {}).get("net_profit"), E.get("total_equity")
-    )
+    # Determine which years to process
+    years = ["current_year", "previous_year"]
+    results = {}
 
-    capital_employed = (E.get("total_equity") or 0) + (L.get("total_liabilities") or 0)
-    ratios["roce"] = safe_div(data.get("p_and_l", {}).get("ebitda"), capital_employed)
+    for year in years:
+        # 1. Extract and sum values for this year
+        el = data.get("equity_and_liabilities", {})
+        sh_funds = el.get("shareholders_funds", [])
+        nc_liab = el.get("non_current_liabilities", [])
+        c_liab = el.get("current_liabilities", [])
 
-    p_and_l = data.get("p_and_l", {})
-    ratios["net_profit_margin"] = safe_div(
-        p_and_l.get("net_profit"), p_and_l.get("revenue")
-    )
-    ratios["inventory_turnover"] = safe_div(
-        p_and_l.get("revenue"), A.get("inventories")
-    )
-    ratios["trade_receivables_turnover"] = safe_div(
-        p_and_l.get("revenue"), A.get("trade_receivables")
-    )
-    ratios["trade_payables_turnover"] = safe_div(
-        p_and_l.get("revenue"), L.get("trade_payables")
-    )
-    ratios["debt_service_coverage"] = safe_div(
-        p_and_l.get("ebitda"), p_and_l.get("interest_expense")
-    )
-    ratios["roi"] = safe_div(p_and_l.get("net_profit"), capital_employed)
+        assets_sec = data.get("assets", {})
+        nc_assets = assets_sec.get("non_current_assets", [])
+        c_assets = assets_sec.get("current_assets", [])
 
-    net_capital = safe_div(
-        (A.get("total_assets") or 0) - (L.get("total_liabilities") or 0), 1
-    )
-    ratios["net_capital_turnover"] = safe_div(p_and_l.get("revenue"), net_capital)
+        # Sum totals
+        equity = sum_year(sh_funds, year)
+        long_term_debt = sum_year(nc_liab, year)
+        current_liabilities = sum_year(c_liab, year)
+        fixed_assets = sum_year(nc_assets, year)
+        current_assets = sum_year(c_assets, year)
 
-    for k, v in ratios.items():
-        if isinstance(v, float):
-            ratios[k] = round(v, 2)
+        total_assets = fixed_assets + current_assets
+        total_liabilities = long_term_debt + current_liabilities
 
-    return ratios
+        # Find specific items for ratios
+        inventory = find_particular(c_assets, ["inventory", "stock"], year) or 0.0
+        receivables = find_particular(c_assets, ["receivable", "debtor"], year) or 0.0
+        cash = find_particular(c_assets, ["cash", "bank"], year) or 0.0
+        payables = find_particular(c_liab, ["payable", "creditor"], year) or 0.0
+
+        # P&L metrics (if found in the balance sheet - rare, or if provided)
+        # Since p_and_l was removed from prompts, we can't easily get these now
+        # unless they are provided in the data.
+        p_and_l = data.get("p_and_l", {})
+        revenue = p_and_l.get(year.replace("_year", "")) if isinstance(p_and_l.get("revenue"), dict) else None
+        # Fallback to old keys/structure if any
+        if revenue is None: revenue = p_and_l.get("revenue") 
+        net_profit = p_and_l.get("net_profit")
+        ebitda = p_and_l.get("ebitda")
+        interest = p_and_l.get("interest_expense")
+
+        def safe_div(a, b):
+            if a is None or b in (None, 0):
+                return None
+            return round(a / b, 4)
+
+        year_ratios = {
+            "current_ratio": safe_div(current_assets, current_liabilities),
+            "quick_ratio": safe_div(current_assets - inventory, current_liabilities),
+            "cash_ratio": safe_div(cash, current_liabilities),
+            "debt_to_equity": safe_div(total_liabilities, equity),
+            "debt_to_assets": safe_div(total_liabilities, total_assets),
+            "equity_ratio": safe_div(equity, total_assets),
+            "roe": safe_div(net_profit, equity),
+            "roce": safe_div(ebitda, equity + long_term_debt),
+            "net_profit_margin": safe_div(net_profit, revenue),
+            "inventory_turnover": safe_div(revenue, inventory),
+            "receivables_turnover": safe_div(revenue, receivables),
+            "interest_coverage": safe_div(ebitda, interest)
+        }
+        
+        # Filter None and round
+        clean_ratios = {k: round(v, 2) if isinstance(v, float) else v for k, v in year_ratios.items() if v is not None}
+        results[year] = clean_ratios
+
+    # For backward compatibility, return only current year ratios at top level
+    return results.get("current_year", {})
 
 
 def main():

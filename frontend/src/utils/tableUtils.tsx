@@ -177,36 +177,54 @@ export const FinancialRatiosTable: React.FC<{ data: any }> = ({ data }) => {
     },
   };
 
+  // Build a single flat list of available ratios with labels
+  const availableRatios: Array<{ key: string; label: string; value: any }> = [];
+
+  // prefer labels from categories map
+  const labelMap: Record<string, string> = {};
+  Object.values(categories).forEach((cat) => {
+    cat.ratios.forEach((r) => (labelMap[r.key] = r.label));
+  });
+
+  Object.entries(flatData).forEach(([k, v]) => {
+    // include primitive values (string/number/boolean)
+    if (v === null) return;
+    if (typeof v === 'number' || typeof v === 'string' || typeof v === 'boolean') {
+      availableRatios.push({ key: k, label: labelMap[k] ?? k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()), value: v });
+    }
+  });
+
+  const columns: TableColumn[] = [
+    { key: 'label', label: 'Metric', width: '65%' },
+    { key: 'value', label: 'Value', width: '35%', align: 'right', format: formatRatio },
+  ];
+
+  const [showAll, setShowAll] = React.useState(false);
+
   return (
-    <div className="space-y-6 w-full">
-      {Object.entries(categories).map(([catKey, category]) => {
-        const categoryData = category.ratios
-          .filter((ratio) => flatData[ratio.key] !== undefined && flatData[ratio.key] !== null)
-          .map((ratio) => ({
-            metric: ratio.label,
-            value: flatData[ratio.key],
-          }));
+    <div className="w-full">
+      <div className="flex items-center justify-end mb-3">
+        <button
+          onClick={() => setShowAll((s) => !s)}
+          className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+          aria-expanded={showAll}
+        >
+          {showAll ? 'Hide details' : 'Show all details'}
+        </button>
+      </div>
 
-        if (categoryData.length === 0) return null;
-
-        const columns: TableColumn[] = [
-          { key: 'metric', label: 'Metric', width: '60%' },
-          { key: 'value', label: 'Value', width: '40%', align: 'right', format: formatRatio },
-        ];
-
-        return (
-          <div key={catKey}>
-            <DataTable
-              data={categoryData}
-              columns={columns}
-              title={category.label}
-              striped
-              bordered
-              hoverable
-            />
-          </div>
-        );
-      })}
+      {showAll ? (
+        <DataTable
+          data={availableRatios.map((r) => ({ label: r.label, value: r.value }))}
+          columns={columns}
+          title="Financial Ratios"
+          striped
+          bordered
+          hoverable
+        />
+      ) : (
+        <div className="p-4 text-gray-500">Click "Show all details" to view all financial ratios in a table.</div>
+      )}
     </div>
   );
 };
