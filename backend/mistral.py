@@ -1,3 +1,7 @@
+
+def parse_number(val):
+    """Parse a string representing a number, handling Indian units like lakh/crore."""
+    return _parse_number_token(val)
 import fitz  # pip install pymupdf
 # Attempt to import the Mistral client; allow missing import in dev simulation mode
 try:

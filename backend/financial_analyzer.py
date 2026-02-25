@@ -1,3 +1,4 @@
+from langchain_experimental.llm_symbolic_math.base import LLMSymbolicMathChain
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 import re
@@ -16,7 +17,10 @@ from langchain_core.callbacks import CallbackManager
 
 # Document handling
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+try:
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+except Exception:
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyMuPDFLoader
 
 # Vector operations
@@ -29,25 +33,91 @@ from langchain_google_genai.chat_models import ChatGoogleGenerativeAIError
 from config import Config
 
 class FinancialAnalyzer:
-    """Main class for financial document analysis using LangChain."""
-    
+
+    def extract_balance_sheet_json_from_text(self, text: str) -> dict:
+        """
+        Extracts a structured balance sheet JSON from raw PDF text using the LLM.
+        Returns a dict with 'assets' and 'equity_and_liabilities' keys, or an error message.
+        """
+        try:
+            self.refresh_llm()
+            prompt = self.get_balance_sheet(text)
+            response = self.analyze_financial_text(prompt)
+            # Try to parse the response as JSON
+            if isinstance(response, str):
+                # Try to find the first JSON object in the response
+                import re, json
+                match = re.search(r'\{[\s\S]*\}', response)
+                if match:
+                    try:
+                        return json.loads(match.group(0))
+                    except Exception:
+                        return {"error": "Could not parse LLM response as JSON", "raw": response}
+                else:
+                    return {"error": "No JSON found in LLM response", "raw": response}
+            elif isinstance(response, dict):
+                return response
+            else:
+                return {"error": "Unexpected LLM response type", "raw": str(response)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def calculate_financial_ratios_llm(self, numbers: dict, ratio_formulas: dict = None) -> dict:
+        """
+        Calculate financial ratios using LLM Symbolic Math Chain for better accuracy with complex formulas.
+        Args:
+            numbers: Dict of extracted financial numbers (e.g., revenue, assets, liabilities, etc.)
+            ratio_formulas: Dict of ratio_name: formula_string (optional, uses defaults if None)
+        Returns:
+            Dict of ratio_name: value (float or None)
+        """
+        if ratio_formulas is None:
+            ratio_formulas = {
+                "current_ratio": "current_assets / current_liabilities",
+                "quick_ratio": "(current_assets - inventory) / current_liabilities",
+                "cash_ratio": "cash_and_cash_equivalents / current_liabilities",
+                "working_capital": "current_assets - current_liabilities",
+                "gross_margin": "(gross_profit / revenue) if revenue != 0 else None",
+                "operating_margin": "(operating_profit / revenue) if revenue != 0 else None",
+                "net_margin": "(net_income / revenue) if revenue != 0 else None",
+                "return_on_assets": "net_income / total_assets",
+                "return_on_equity": "net_income / total_equity",
+                "debt_ratio": "total_liabilities / total_assets",
+                "equity_ratio": "total_equity / total_assets",
+                "debt_to_equity": "total_liabilities / total_equity",
+                "interest_coverage": "ebit / interest_expense if interest_expense != 0 else None",
+            }
+        llm_math = LLMSymbolicMathChain.from_llm(self.llm, allow_dangerous_requests=False)
+        results = {}
+        for ratio, formula in ratio_formulas.items():
+            # Prepare the prompt for the math chain
+            prompt = f"Given the following numbers: {numbers}. Calculate {ratio} using the formula: {formula}. Return only the numeric result or null."
+            try:
+                result_dict = llm_math({"question": prompt})
+                result = result_dict.get("answer")
+                # Try to parse float, else None
+                try:
+                    results[ratio] = float(result)
+                except Exception:
+                    results[ratio] = None
+            except Exception as e:
+                results[ratio] = None
+        return results
+
     def __init__(self):
         self.config = Config()
-        
         # Set up LangChain tracing
         if self.config.LANGCHAIN_TRACING_V2:
             os.environ["LANGCHAIN_TRACING_V2"] = "true"
             os.environ["LANGCHAIN_ENDPOINT"] = self.config.LANGCHAIN_ENDPOINT
             os.environ["LANGCHAIN_API_KEY"] = self.config.LANGCHAIN_API_KEY
             os.environ["LANGCHAIN_PROJECT"] = self.config.LANGCHAIN_PROJECT
-            
             tracer = LangChainTracer(
                 project_name=self.config.LANGCHAIN_PROJECT
             )
             self.callback_manager = CallbackManager([tracer])
         else:
             self.callback_manager = None
-            
         self.embeddings = self._initialize_embeddings()
         self.llm = self._initialize_llm()
         self.text_splitter = self._initialize_text_splitter()
@@ -877,7 +947,8 @@ class FinancialAnalyzer:
 
         return values
 
-    def calculate_financial_ratios_from_text(self, text: str) -> Dict[str, Optional[float]]:
+
+    def calculate_financial_ratios_from_text(self, text: str, use_llm_math: bool = False) -> Dict[str, Optional[float]]:
         """Deterministically calculate a comprehensive set of financial ratios from text.
 
         Organizes ratios into categories:
@@ -901,95 +972,75 @@ class FinancialAnalyzer:
             except Exception:
                 return None
 
-        ratios_raw: Dict[str, Optional[float]] = {}
-
-        # ============ LIQUIDITY RATIOS ============
-        ratios_raw['current_ratio'] = safe_div(nums.get('current_assets'), nums.get('current_liabilities'))
-        quick_assets = None
-        if nums.get('current_assets') is not None and nums.get('inventory') is not None:
-            quick_assets = nums['current_assets'] - nums['inventory']
-        ratios_raw['quick_ratio'] = safe_div(quick_assets, nums.get('current_liabilities'))
-        ratios_raw['cash_ratio'] = safe_div(nums.get('cash_and_cash_equivalents'), nums.get('current_liabilities'))
-        
-        # Working capital
-        working_capital = None
-        if nums.get('current_assets') is not None and nums.get('current_liabilities') is not None:
-            working_capital = nums['current_assets'] - nums['current_liabilities']
-        ratios_raw['working_capital'] = working_capital
-
-        # ============ PROFITABILITY RATIOS ============
-        # Gross profit and margin
-        if nums.get('gross_profit') is not None:
-            ratios_raw['gross_profit'] = nums.get('gross_profit')
-        elif nums.get('revenue') is not None and nums.get('cogs') is not None:
-            ratios_raw['gross_profit'] = nums['revenue'] - nums['cogs']
+        if use_llm_math:
+            ratios_raw = self.calculate_financial_ratios_llm(nums)
         else:
-            ratios_raw['gross_profit'] = None
+            ratios_raw: Dict[str, Optional[float]] = {}
 
-        ratios_raw['gross_margin'] = None
-        if nums.get('revenue') is not None and nums.get('revenue') != 0:
-            if ratios_raw.get('gross_profit') is not None:
-                ratios_raw['gross_margin'] = ratios_raw['gross_profit'] / nums['revenue']
+            # ============ LIQUIDITY RATIOS ============
+            ratios_raw['current_ratio'] = safe_div(nums.get('current_assets'), nums.get('current_liabilities'))
+            quick_assets = None
+            if nums.get('current_assets') is not None and nums.get('inventory') is not None:
+                quick_assets = nums['current_assets'] - nums['inventory']
+            ratios_raw['quick_ratio'] = safe_div(quick_assets, nums.get('current_liabilities'))
+            ratios_raw['cash_ratio'] = safe_div(nums.get('cash_and_cash_equivalents'), nums.get('current_liabilities'))
 
-        # Operating profit and margin
-        if nums.get('operating_income') is not None:
-            ratios_raw['operating_profit'] = nums.get('operating_income')
-        else:
-            ratios_raw['operating_profit'] = None
+            # Working capital
+            working_capital = None
+            if nums.get('current_assets') is not None and nums.get('current_liabilities') is not None:
+                working_capital = nums['current_assets'] - nums['current_liabilities']
+            ratios_raw['working_capital'] = working_capital
 
-        ratios_raw['operating_margin'] = safe_div(ratios_raw.get('operating_profit'), nums.get('revenue'))
+            # ============ PROFITABILITY RATIOS ============
+            # Gross profit and margin
+            if nums.get('gross_profit') is not None:
+                ratios_raw['gross_profit'] = nums.get('gross_profit')
+            elif nums.get('revenue') is not None and nums.get('cogs') is not None:
+                ratios_raw['gross_profit'] = nums['revenue'] - nums['cogs']
+            else:
+                ratios_raw['gross_profit'] = None
 
-        # Net profit and margin
-        ratios_raw['net_profit'] = nums.get('net_income')
-        ratios_raw['net_margin'] = safe_div(nums.get('net_income'), nums.get('revenue'))
+            ratios_raw['gross_margin'] = None
+            if nums.get('revenue') is not None and nums.get('revenue') != 0:
+                if ratios_raw.get('gross_profit') is not None:
+                    ratios_raw['gross_margin'] = ratios_raw['gross_profit'] / nums['revenue']
 
-        # Returns on assets and equity
-        ratios_raw['return_on_assets'] = safe_div(nums.get('net_income'), nums.get('total_assets'))
-        ratios_raw['return_on_equity'] = safe_div(nums.get('net_income'), nums.get('total_equity'))
+            # Operating profit and margin
+            if nums.get('operating_income') is not None:
+                ratios_raw['operating_profit'] = nums.get('operating_income')
+            else:
+                ratios_raw['operating_profit'] = None
 
-        # ============ SOLVENCY / LEVERAGE RATIOS ============
-        ratios_raw['debt_ratio'] = safe_div(nums.get('total_liabilities'), nums.get('total_assets'))
-        ratios_raw['equity_ratio'] = safe_div(nums.get('total_equity'), nums.get('total_assets'))
-        ratios_raw['debt_to_equity'] = safe_div(nums.get('total_liabilities'), nums.get('total_equity'))
-        ratios_raw['equity_to_debt'] = safe_div(nums.get('total_equity'), nums.get('total_liabilities'))
-        
-        # Interest coverage
-        ratios_raw['interest_coverage'] = safe_div(nums.get('ebit') or nums.get('operating_income'), nums.get('interest_expense'))
-        
-        # Debt service coverage (simplified - using net income)
-        ratios_raw['debt_service_coverage'] = safe_div(nums.get('net_income'), nums.get('total_liabilities'))
+            ratios_raw['operating_margin'] = None
+            if nums.get('revenue') is not None and nums.get('revenue') != 0:
+                if ratios_raw.get('operating_profit') is not None:
+                    ratios_raw['operating_margin'] = ratios_raw['operating_profit'] / nums['revenue']
 
-        # ============ EFFICIENCY / ACTIVITY RATIOS ============
-        ratios_raw['asset_turnover'] = safe_div(nums.get('revenue'), nums.get('total_assets'))
-        ratios_raw['inventory_turnover'] = safe_div(nums.get('cogs'), nums.get('inventory'))
-        ratios_raw['receivables_turnover'] = safe_div(nums.get('revenue'), nums.get('receivables'))
-        ratios_raw['payables_turnover'] = safe_div(nums.get('cogs'), nums.get('payables'))
-        
-        # Days metrics
-        if ratios_raw.get('receivables_turnover') and ratios_raw['receivables_turnover'] != 0:
-            ratios_raw['days_sales_outstanding'] = 365 / ratios_raw['receivables_turnover']
-        else:
-            ratios_raw['days_sales_outstanding'] = None
-            
-        if ratios_raw.get('inventory_turnover') and ratios_raw['inventory_turnover'] != 0:
-            ratios_raw['inventory_holding_period'] = 365 / ratios_raw['inventory_turnover']
-        else:
-            ratios_raw['inventory_holding_period'] = None
+            # Net profit and margin
+            ratios_raw['net_profit'] = nums.get('net_income')
+            ratios_raw['net_margin'] = safe_div(nums.get('net_income'), nums.get('revenue'))
 
-        # ============ ROUND RATIOS ============
-        for k, v in list(ratios_raw.items()):
-            if v is None:
-                continue
-            try:
-                # Keep absolute monetary values unrounded. Round ratios (fractions) to 4 decimals.
-                if k in ['gross_profit', 'operating_profit', 'net_profit', 'working_capital']:
-                    ratios_raw[k] = v
-                else:
-                    ratios_raw[k] = round(v, 4)
-            except Exception:
-                ratios_raw[k] = v
+            # Returns on assets and equity
+            ratios_raw['return_on_assets'] = safe_div(nums.get('net_income'), nums.get('total_assets'))
+            ratios_raw['return_on_equity'] = safe_div(nums.get('net_income'), nums.get('total_equity'))
 
-        # ============ ORGANIZE BY CATEGORY ============
+            # ============ SOLVENCY / LEVERAGE RATIOS ============
+            ratios_raw['debt_ratio'] = safe_div(nums.get('total_liabilities'), nums.get('total_assets'))
+            ratios_raw['equity_ratio'] = safe_div(nums.get('total_equity'), nums.get('total_assets'))
+            ratios_raw['debt_to_equity'] = safe_div(nums.get('total_liabilities'), nums.get('total_equity'))
+            ratios_raw['equity_to_debt'] = safe_div(nums.get('total_equity'), nums.get('total_liabilities'))
+            ratios_raw['interest_coverage'] = safe_div(nums.get('ebit'), nums.get('interest_expense'))
+            ratios_raw['debt_service_coverage'] = safe_div(nums.get('ebit'), nums.get('interest_expense'))
+
+            # ============ EFFICIENCY RATIOS ============
+            ratios_raw['asset_turnover'] = safe_div(nums.get('revenue'), nums.get('total_assets'))
+            ratios_raw['inventory_turnover'] = safe_div(nums.get('cogs'), nums.get('inventory'))
+            ratios_raw['receivables_turnover'] = safe_div(nums.get('revenue'), nums.get('accounts_receivable'))
+            ratios_raw['payables_turnover'] = safe_div(nums.get('cogs'), nums.get('accounts_payable'))
+            ratios_raw['days_sales_outstanding'] = safe_div(nums.get('accounts_receivable'), nums.get('revenue'))
+            ratios_raw['inventory_holding_period'] = safe_div(nums.get('inventory'), nums.get('cogs'))
+
+        # Organize by category for output
         ratios: Dict[str, Dict[str, Optional[float]]] = {
             'liquidity_ratios': {
                 'current_ratio': ratios_raw.get('current_ratio'),

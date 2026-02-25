@@ -1,211 +1,201 @@
+
+import re
 from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS, cross_origin
 import os
 import uuid
-# pytesseract removed — using GLM OCR (Ollama) instead
 import tempfile
 from werkzeug.utils import secure_filename
 import fitz # PyMuPDF
 import datetime
 import json
 from dotenv import load_dotenv
-# Load environment variables early
-load_dotenv()
-
+from mistral import run_ocr, extract_financials, parse_number
 from config import Config
 from financial_analyzer import FinancialAnalyzer
-from session_store import SessionStore
-from tavily_client import search_company
-from mistral import extract_balance_sheet, ocr_pdf, run_ocr, process_pdf, Mistral, API_KEY as MISTRAL_API_KEY
-from local_llm_client import extract_financials, redraft_json
 from advanced_pdf_service import AdvancedPDFService
-import logging
-import re
 
-# Configure basic logger to stdout
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
-
-
-def log_balance_sheet(session_id: str, data):
-    try:
-        # Log a clear marker and the JSON-formatted balance sheet
-        logging.info("BALANCE_SHEET_JSON session=%s\n%s", session_id, json.dumps(data, ensure_ascii=False, indent=2))
-    except Exception as e:
-        logging.exception("Failed to log balance sheet for %s: %s", session_id, e)
-
-app = Flask(__name__)
-CORS(app)
-
+# ──────────────── Environment Setup ────────────────
+load_dotenv()
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 SESSIONS_FOLDER = os.path.join(UPLOAD_FOLDER, "sessions")
 os.makedirs(SESSIONS_FOLDER, exist_ok=True)
-
-# Tesseract removed — GLM OCR will be used exclusively for OCR tasks
-
 MOONSHOT_API_KEY = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
-KIMI_BASE_URL = "https://api.moonshot.ai/v1" # Switched to .ai base URL for international access
-
-pdf_stores = {} 
-
+KIMI_BASE_URL = "https://api.moonshot.ai/v1"
 current_api_key = os.getenv("GOOGLE_API_KEY")
+pdf_stores = {}
 
-# Module-level safe numeric helpers (used outside calculate_financial_ratios)
-def _is_number(x):
-    return isinstance(x, (int, float))
-
-def safe_ge(x, y):
-    try:
-        return _is_number(x) and x >= y
-    except Exception:
-        return False
-
-def safe_gt(x, y):
-    try:
-        return _is_number(x) and x > y
-    except Exception:
-        return False
-
-
-# Module-level number parser (used by chart extraction and other helpers)
-def parse_number(val):
-    if val is None:
-        return None
-    if isinstance(val, (int, float)):
-        return float(val)
-    s = str(val).strip().lower()
-    if not s or s in ("-", "—", "na", "nil"):
-        return None
-    neg = s.startswith('(') and s.endswith(')')
-    s = s.strip('()')
-    s = re.sub(r"[₹$,]", "", s)
-    cleaned = re.sub(r"[^0-9.\-]", "", s)
-    if not cleaned or cleaned == '.':
-        return None
-    try:
-        num = float(cleaned)
-        return -num if neg else num
-    except (ValueError, TypeError):
-        return None
-
-
+# ──────────────── Utility Functions ────────────────
 def get_pdf_store(session_id: str) -> FinancialAnalyzer:
-    store = pdf_stores.get(session_id)
-    if not store:
-        raise ValueError("Document not processed or session expired. Please upload the PDF again.")
+    return pdf_stores.get(session_id)
+
+def extract_and_save_balance_sheet_json(pdf_path, output_json_path=None):
+    pages = extract_balance_sheet_pages(pdf_path)
+    doc = fitz.open(pdf_path)
+    balance_sheet_tables = []
+    for p in pages:
+        page = doc.load_page(p)
+        table = parse_balance_sheet_page(page)
+        balance_sheet_tables.append({"page": p, "table": table})
+    result = {
+        "identified_pages": pages,
+        "table_rows": balance_sheet_tables
+    }
+    if output_json_path:
+        with open(output_json_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2)
+        print(f"✅ Balance sheet JSON saved to: {output_json_path}")
+    return result
+
+# ──────────────── Core Extraction Logic ────────────────
+# extract_balance_sheet_pages, parse_balance_sheet_page, extract_comprehensive_balance_sheet_items, etc.
+# ...existing extraction and parsing functions...
+
+# ──────────────── Flask App Setup ────────────────
+app = Flask(__name__)
+CORS(app)
+
+# ──────────────── API Endpoints ────────────────
+@app.route('/api/pdf-json/<session_id>', methods=['GET'])
+def get_pdf_json(session_id):
+    """Return the actual extracted JSON from the PDF for the given session."""
+    try:
+        pdf_store = get_pdf_store(session_id)
+        balance_data = getattr(pdf_store, 'balance_sheet_data', None)
+        if not balance_data and hasattr(pdf_store, 'filepath') and pdf_store.filepath:
+            analyzer = FinancialAnalyzer()
+            with open(pdf_store.filepath, 'rb') as f:
+                text = analyzer._extract_text_from_pdf(pdf_store.filepath)
+            balance_data = analyzer.extract_balance_sheet_json_from_text(text)
+        if not balance_data:
+            return jsonify({'error': 'No extracted JSON found for this session.'}), 404
+        return jsonify({'session_id': session_id, 'balance_sheet_json': balance_data})
+    except Exception as e:
+        print(f"Error in get_pdf_json: {e}")
+        return jsonify({'error': str(e)}), 500
+# ──────────────── Dependencies ────────────────
+# Required Python packages:
+# flask
+# flask-cors
+# fitz (PyMuPDF)
+# python-dotenv
+# werkzeug
+# langchain
+# mistral (custom or local module)
+# advanced_pdf_service (custom or local module)
+# financial_analyzer (custom or local module)
+# config (custom or local module)
+#
+# Install with:
+# pip install flask flask-cors pymupdf python-dotenv werkzeug langchain
+#
+# Ensure custom modules are present in backend directory.
+# Utility: Extract balance sheet pages and save as JSON
+def extract_and_save_balance_sheet_json(pdf_path, output_json_path=None):
+    pages = extract_balance_sheet_pages(pdf_path)
+    doc = fitz.open(pdf_path)
+    balance_sheet_tables = []
+    for p in pages:
+        page = doc.load_page(p)
+        table = parse_balance_sheet_page(page)
+        balance_sheet_tables.append({"page": p, "table": table})
+    result = {
+        "identified_pages": pages,
+        "table_rows": balance_sheet_tables
+    }
+    if output_json_path:
+        with open(output_json_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2)
+        print(f"✅ Balance sheet JSON saved to: {output_json_path}")
+    return result
+# All imports at the top
+# All imports at the top
+from flask import Flask, request, jsonify, Response, stream_with_context
+from flask_cors import CORS, cross_origin
+
+
+# ──────────────── Imports ────────────────
+from flask import Flask, request, jsonify, Response, stream_with_context
+from flask_cors import CORS, cross_origin
+import os
+import uuid
+import tempfile
+from werkzeug.utils import secure_filename
+import fitz # PyMuPDF
+import datetime
+import json
+from dotenv import load_dotenv
+from mistral import run_ocr, extract_financials, parse_number
+from config import Config
+from financial_analyzer import FinancialAnalyzer
+from advanced_pdf_service import AdvancedPDFService
+
+# ──────────────── Environment Setup ────────────────
+load_dotenv()
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+SESSIONS_FOLDER = os.path.join(UPLOAD_FOLDER, "sessions")
+os.makedirs(SESSIONS_FOLDER, exist_ok=True)
+MOONSHOT_API_KEY = os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY")
+KIMI_BASE_URL = "https://api.moonshot.ai/v1"
+current_api_key = os.getenv("GOOGLE_API_KEY")
+pdf_stores = {}
+
+# ──────────────── Utility Functions ────────────────
+def get_pdf_store(session_id: str) -> FinancialAnalyzer:
+    return pdf_stores.get(session_id)
+
+# Utility: Extract balance sheet pages and save as JSON
+def extract_and_save_balance_sheet_json(pdf_path, output_json_path=None):
+    pages = extract_balance_sheet_pages(pdf_path)
+    doc = fitz.open(pdf_path)
+    balance_sheet_tables = []
+    for p in pages:
+        page = doc.load_page(p)
+        table = parse_balance_sheet_page(page)
+        balance_sheet_tables.append({"page": p, "table": table})
+    result = {
+        "identified_pages": pages,
+        "table_rows": balance_sheet_tables
+    }
+    if output_json_path:
+        with open(output_json_path, "w", encoding="utf-8") as f:
+            json.dump(result, f, indent=2)
+        print(f"✅ Balance sheet JSON saved to: {output_json_path}")
+    return result
+
+# ──────────────── Core Extraction Logic ────────────────
+# ...existing code for extract_balance_sheet_pages, parse_balance_sheet_page, etc...
+
+# ──────────────── Flask App Setup ────────────────
+app = Flask(__name__)
+CORS(app)
+
+# ──────────────── API Endpoints ────────────────
+@app.route('/api/pdf-json/<session_id>', methods=['GET'])
+def get_pdf_json(session_id):
+    """Return the actual extracted JSON from the PDF for the given session."""
+    try:
+        pdf_store = get_pdf_store(session_id)
+        balance_data = getattr(pdf_store, 'balance_sheet_data', None)
+        if not balance_data and hasattr(pdf_store, 'filepath') and pdf_store.filepath:
+            analyzer = FinancialAnalyzer()
+            with open(pdf_store.filepath, 'rb') as f:
+                text = analyzer._extract_text_from_pdf(pdf_store.filepath)
+            balance_data = analyzer.extract_balance_sheet_json_from_text(text)
+        if not balance_data:
+            return jsonify({'error': 'No extracted JSON found for this session.'}), 404
+        return jsonify({'session_id': session_id, 'balance_sheet_json': balance_data})
+    except Exception as e:
+        print(f"Error in get_pdf_json: {e}")
+        return jsonify({'error': str(e)}), 500
     return store
 
 
-class PersistentStore:
-    """Lightweight wrapper that holds persisted session metadata and lazily
-    initializes a full FinancialAnalyzer when needed.
-    """
-    def __init__(self, session_id: str, filepath: str = None, balance_sheet_data=None, balance_sheet_pdf: str = None):
-        self.session_id = session_id
-        self.filepath = filepath
-        self.balance_sheet_data = balance_sheet_data
-        self.balance_sheet_pdf = balance_sheet_pdf
-        self._analyzer = None
 
-    def ensure_analyzer(self):
-        if self._analyzer is None:
-            if not self.filepath:
-                raise ValueError("No original PDF path available to create FinancialAnalyzer.")
-            if not current_api_key:
-                raise ValueError("API key not set. Cannot initialize FinancialAnalyzer.")
-            try:
-                self._analyzer = FinancialAnalyzer()
-            except Exception as e:
-                print(f"Failed to initialize FinancialAnalyzer for session {self.session_id}: {e}")
-                raise
 
-    # Proxy chat and report methods to the underlying FinancialAnalyzer
-    def chat_answer(self, prompt: str):
-        self.ensure_analyzer()
-        return self._analyzer.chat_answer(prompt)
 
-    def get_compliance_gap_report(self):
-        self.ensure_analyzer()
-        return self._analyzer.get_compliance_gap_report()
-
-    def get_auditor_report_summary(self):
-        self.ensure_analyzer()
-        return self._analyzer.get_auditor_report_summary()
-
-    def get_director_report_highlights(self):
-        self.ensure_analyzer()
-        return self._analyzer.get_director_report_highlights()
-
-    def get_director_report_compliance_check(self):
-        self.ensure_analyzer()
-        return self._analyzer.get_director_report_compliance_check()
-
-    def get_overall_summary(self):
-        self.ensure_analyzer()
-        return self._analyzer.get_overall_summary()
-
-def get_session_id():
-    # Be permissive about how clients send the session id.
-    # Try JSON body, form fields, query params, and raw body parsing.
-    try:
-        data = request.get_json(silent=True)
-    except Exception:
-        data = None
-
-    if isinstance(data, dict):
-        session_id = data.get("session_id") or data.get("sessionId") or data.get("sid")
-        if session_id:
-            return session_id
-
-    # Try form-encoded data (e.g., from tools that post form fields)
-    session_id = request.form.get("session_id") or request.form.get("sessionId")
-    if session_id:
-        return session_id
-
-    # Try query parameters
-    session_id = request.args.get("session_id") or request.args.get("sessionId")
-    if session_id:
-        return session_id
-
-    # Try headers - many clients prefer to send a session id in headers
-    try:
-        # common header variations
-        hdrs = request.headers
-        for key in ("session_id", "session-id", "sessionId", "sid", "x-session-id", "x-sessionid"):
-            if key in hdrs:
-                v = hdrs.get(key)
-                if v:
-                    return v
-
-        # Authorization: Bearer <session_id> (some clients pass session token here)
-        auth = hdrs.get("Authorization") or hdrs.get("authorization")
-        if auth and isinstance(auth, str) and auth.lower().startswith("bearer "):
-            token = auth.split(None, 1)[1].strip()
-            if token:
-                return token
-    except Exception:
-        pass
-
-    # Try raw body as JSON text (some clients send JSON but Flask may not parse it)
-    try:
-        raw = request.get_data(as_text=True)
-        if raw:
-            try:
-                parsed = json.loads(raw)
-                if isinstance(parsed, dict):
-                    session_id = parsed.get("session_id") or parsed.get("sessionId") or parsed.get("sid")
-                    if session_id:
-                        return session_id
-            except Exception:
-                # If body is not JSON, attempt to find a session-like token (UUID-ish) in the raw text
-                m = re.search(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", raw)
-                if m:
-                    return m.group(0)
-
-    except Exception:
-        pass
-
-    raise ValueError("Missing session_id in request payload.")
 
 def extract_balance_sheet_pages(pdf_path, keywords=["equity", "liabilities", "total assets", "balance sheet", "total equity", "current assets", "non-current assets"], max_pages=2):
     try:
@@ -306,6 +296,8 @@ def parse_balance_sheet_page(page):
                     nums = []
                     for t in texts[1:]:
                         # Use the module-level parse_number and indian-converter
+                        if t is None or (isinstance(t, str) and (t.strip() == "" or all(c == '.' for c in t.strip()))):
+                            continue
                         v = parse_number(t)
                         if v is None:
                             v = _convert_indian_number_match(t)
@@ -358,6 +350,8 @@ def parse_balance_sheet_page(page):
 
                             parsed_nums = []
                             for t in nums:
+                                if t is None or (isinstance(t, str) and (t.strip() == "" or all(c == '.' for c in t.strip()))):
+                                    continue
                                 v = parse_number(t)
                                 if v is None:
                                     try:
@@ -491,22 +485,6 @@ def extract_comprehensive_balance_sheet_items(balance_sheet_data: list):
     - Equity Components (Share Capital, Reserves, Retained Earnings)
     """
     try:
-        def parse_number(val):
-            if val is None: return None
-            if isinstance(val, (int, float)): return float(val)
-            s = str(val).strip().lower()
-            if not s or s in ("-", "—", "na", "nil"): return None
-            neg = s.startswith("(") and s.endswith(")")
-            s = s.strip("()")
-            s = re.sub(r"[₹$,]", "", s)
-            cleaned = re.sub(r"[^0-9.\-]", "", s)
-            if not cleaned or cleaned == ".": return None
-            try:
-                num = float(cleaned)
-                return -num if neg else num
-            except (ValueError, TypeError):
-                return None
-
         # Normalize all rows
         normalized_data = []
         for row in balance_sheet_data:
@@ -661,6 +639,23 @@ def extract_comprehensive_balance_sheet_items(balance_sheet_data: list):
         print(f"Error extracting comprehensive balance sheet items: {e}")
         return None
 
+# ──────────────── API Endpoints ────────────────
+@app.route('/chat/financial-ratio', methods=['POST'])
+def chat_financial_ratio():
+    """Chat endpoint for financial ratio analysis."""
+    try:
+        data = request.get_json()
+        # Example: expects 'balance_sheet' and 'profit_loss' in request
+        balance_sheet = data.get('balance_sheet')
+        profit_loss = data.get('profit_loss')
+        # Call your ratio calculation logic (update as needed)
+        ratios = calculate_financial_ratios(balance_sheet_data=balance_sheet, profit_loss_data=profit_loss)
+        return jsonify({'ratios': ratios})
+    except Exception as e:
+        print(f"Error in chat_financial_ratio: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 
 def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data: dict = None, mistral_financials: dict = None):
     """
@@ -680,27 +675,6 @@ def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data
             print(f"DEBUG: P&L type: {type(profit_loss_data)}, keys: {list(profit_loss_data.keys()) if isinstance(profit_loss_data, dict) else 'N/A'}")
         
         # Helper to parse single number robustly - lenient
-        def parse_number(val):
-            if val is None: return None
-            if isinstance(val, (int, float)): return float(val)
-            s = str(val).strip()
-            if not s or s.lower() in ("-", "—", "na", "nil", "null"): return None
-
-            # Handle negative in parens
-            neg = False
-            if '(' in s and ')' in s:
-                neg = True
-            
-            # Remove everything except digits, dot, hyphen
-            cleaned = re.sub(r"[^0-9.\-]", "", s)
-            
-            # Handle double dots/hyphens if any? simple float logic
-            if not cleaned or cleaned == ".": return None
-            try:
-                num = float(cleaned)
-                return -abs(num) if neg else num
-            except (ValueError, TypeError):
-                return None
 
         # Safe numeric comparison helpers to avoid TypeErrors when values are None or non-numeric
         def _is_number(x):
@@ -724,28 +698,6 @@ def calculate_financial_ratios(balance_sheet_data: list = None, profit_loss_data
             except Exception:
                 return False
 
-        # Helper to parse numbers robustly - extract ALL numbers from text
-        def parse_all_numbers(val):
-            """Extract all numbers from a string (handles multi-line values)"""
-            if val is None: return []
-            if isinstance(val, (int, float)): return [float(val)]
-            s = str(val).strip()
-            if not s: return []
-            
-            # Find all numbers (including those with commas)
-            import re as regex
-            numbers_str = regex.findall(r'[\(\-]?\d+(?:,\d+)*\.?\d*', s)
-            numbers = []
-            for num_str in numbers_str:
-                try:
-                    num_str = num_str.strip("()")
-                    is_negative = num_str.startswith("-") or s.find(f"({num_str})") >= 0
-                    num_str = num_str.replace(",", "")
-                    num = float(num_str)
-                    numbers.append(-num if is_negative else num)
-                except (ValueError, TypeError):
-                    pass
-            return numbers
 
         # ── Initialize all financial variables to avoid NameError ──────────
         revenue = None
@@ -1536,10 +1488,15 @@ def _convert_indian_number_match(s: str):
     s = s.strip().lower()
     # remove commas
     s = s.replace(',', '')
+    if s == '' or all(c == '.' for c in s):
+        return None
     m = re.match(r"\(?(-?[0-9]+(?:\.[0-9]+)?)\)?\s*(lakhs?|lakh|crore|crores|cr)?", s)
     if not m:
+        cleaned = re.sub(r"[^0-9.\-]", "", s)
+        if cleaned == '' or all(c == '.' for c in cleaned):
+            return None
         try:
-            return float(re.sub(r"[^0-9.\-]", "", s))
+            return float(cleaned)
         except Exception:
             return None
     num = float(m.group(1))
@@ -2884,7 +2841,7 @@ def sanitize_balance_sheet_data(bs_data):
                     return None
                 # If purely non-numeric, return None
                 cleaned = re.sub(r"[^0-9\.,\-\(\)]", "", s)
-                if cleaned == "":
+                if cleaned == "" or all(c == '.' for c in s):
                     return None
                 # Try module parse_number first
                 n = parse_number(s)
@@ -2902,6 +2859,8 @@ def sanitize_balance_sheet_data(bs_data):
                 if m:
                     token = m.group(0)
                     token = token.replace(',', '')
+                    if token.strip() == '' or all(c == '.' for c in token.strip()):
+                        return None
                     try:
                         return float(token.strip('()'))
                     except Exception:
@@ -2940,845 +2899,12 @@ def sanitize_balance_sheet_data(bs_data):
         return bs_data
 
 
-@app.route("/chat/financial-ratio", methods=["POST"])
-def financial_ratio():
-    """
-    Expected JSON payload: { "session_id": "<session-id>" }
-
-    This endpoint will look up the processed PDF store for the session and
-    return pre-computed/extracted balance sheet data and calculated ratios.
-    Ratios are computed from actual data, then analyzed by AI grounded in facts.
-    """
-    try:
-        # Debug: log incoming request info to help diagnose 400 responses
-        try:
-            print("--- financial_ratio request start ---")
-            print("Headers:", dict(request.headers))
-            print("Raw body:", request.get_data())
-        except Exception as _:
-            pass
-
-        # Use the common get_session_id helper that other routes use
-        try:
-            session_id = get_session_id()
-        except ValueError as ve:
-            # Provide an explicit 400 with debug info so callers understand why
-            try:
-                raw = request.get_data(as_text=True)
-            except Exception:
-                raw = '<failed to read body>'
-            print(f"Missing session_id in request. Raw body: {raw}")
-            return jsonify({"error": "Missing session_id in request payload.", "details": str(ve), "raw_body": raw}), 400
-
-        # Retrieve the stored PDF/RAG object; if missing, return 404 (not found)
-        try:
-            pdf_store = get_pdf_store(session_id)
-        except ValueError as ve:
-            # More explicit: session not found or expired
-            return jsonify({"error": str(ve)}), 404
-
-        # Extra debug info to diagnose missing balance data
-        try:
-            print("Session lookup:", session_id in pdf_stores)
-            print("PDF store type:", type(pdf_store))
-            # Print available attributes on the store (limited)
-            try:
-                attrs = [a for a in dir(pdf_store) if not a.startswith("__")][:40]
-                print("Store attrs sample:", attrs)
-            except Exception:
-                pass
-        except Exception:
-            pass
-
-        # The upload flow stores balance_sheet_data as a list (per page). Flatten it to rows.
-        balance_data = getattr(pdf_store, "balance_sheet_data", None)
-        # If ratios were precomputed during upload, return them immediately
-        precomputed = getattr(pdf_store, 'ratios_result', None)
-        if precomputed:
-            return jsonify({"response": precomputed}), 200
-        if not balance_data:
-            # Attempt on-demand extraction from available PDF paths (try several locations)
-            pdf_path = None
-            # Check for a saved extracted-pages PDF on the store
-            pdf_path_candidate = getattr(pdf_store, "balance_sheet_pdf", None)
-            if pdf_path_candidate and os.path.exists(pdf_path_candidate):
-                pdf_path = pdf_path_candidate
-
-            # Check persistent session file for original filepath
-            if not pdf_path:
-                session_file = os.path.join(SESSIONS_FOLDER, f"{session_id}.json")
-                if os.path.exists(session_file):
-                    try:
-                        with open(session_file, "r", encoding="utf-8") as sf:
-                            sdata = json.load(sf)
-                        # prefer balance_sheet_pdf if present
-                        cand = sdata.get("balance_sheet_pdf") or sdata.get("original_filepath") or sdata.get("filepath")
-                        if cand and os.path.exists(cand):
-                            pdf_path = cand
-                    except Exception as e:
-                        print(f"Failed to read session file {session_file}: {e}")
-
-            # As a last resort, check for any uploaded PDF with a name containing the session id
-            if not pdf_path:
-                for fn in os.listdir(UPLOAD_FOLDER):
-                    if session_id in fn:
-                        candidate = os.path.join(UPLOAD_FOLDER, fn)
-                        if os.path.exists(candidate):
-                            pdf_path = candidate
-                            break
-
-        # PRIORITIZE Mistral OCR Integration if available
-        if MISTRAL_API_KEY and pdf_path:
-            try:
-                print(f"Using Mistral OCR for session {session_id}...")
-                client = Mistral(api_key=MISTRAL_API_KEY)
-                
-                # Instead of the whole PDF, let's find relevant pages to avoid token limits
-                # and ensure we get BOTH balance sheet and P&L
-                relevant_pages = []
-                # Use existing heuristic to find balance sheet pages
-                bs_pages = extract_balance_sheet_pages(pdf_path)
-                relevant_pages.extend(bs_pages)
-                
-                # Heuristic to find P&L pages (Statement of Profit and Loss)
-                try:
-                    doc = fitz.open(pdf_path)
-                    for i in range(len(doc)):
-                        text_page = doc[i].get_text().lower()
-                        if "profit and loss" in text_page or "profit & loss" in text_page:
-                            if i not in relevant_pages:
-                                relevant_pages.append(i)
-                    doc.close()
-                except:
-                    pass
-                
-                # Sort and remove duplicates
-                relevant_pages = sorted(list(set(relevant_pages)))
-                
-                if not relevant_pages:
-                    # Fallback to first few pages if none found
-                    relevant_pages = [0, 1, 2, 3, 4]
-                
-                # Use GLM OCR (process_pdf) to extract text for the relevant pages only
-                ocr_text = ""
-                ocr_fallback_used = True
-                try:
-                    all_text, _ = process_pdf(pdf_path)
-                    # all_text contains markers like "===== PAGE {n} =====" per page
-                    for pg_num in relevant_pages:
-                        marker = f"===== PAGE {pg_num+1} ====="
-                        if marker in all_text:
-                            # extract from marker to next marker or end
-                            start = all_text.index(marker) + len(marker)
-                            # find next marker
-                            next_marker = all_text.find("===== PAGE ", start)
-                            page_chunk = all_text[start:next_marker] if next_marker != -1 else all_text[start:]
-                            ocr_text += page_chunk + "\n"
-                except Exception as e:
-                    print(f"GLM OCR (process_pdf) failed for relevant pages: {e}")
-                    ocr_text = ""
-
-                setattr(pdf_store, 'ocr_fallback_used', ocr_fallback_used)
-                # Persist flag in session file for later inspection
-                try:
-                    session_file = os.path.join(SESSIONS_FOLDER, f"{session_id}.json")
-                    prev = {}
-                    if os.path.exists(session_file):
-                        with open(session_file, 'r', encoding='utf-8') as sf:
-                            prev = json.load(sf)
-                    prev.update({"ocr_fallback_used": bool(ocr_fallback_used)})
-                    with open(session_file, 'w', encoding='utf-8') as sf:
-                        json.dump(prev, sf, ensure_ascii=False, indent=2)
-                except Exception as e:
-                    print(f"Failed to persist OCR flag for {session_id}: {e}")
-                
-                print("OCR Text:", ocr_text)
-                mistral_data = extract_balance_sheet(ocr_text, client)
-                
-                if mistral_data:
-                    # Convert Mistral's structured format to the internal format if needed
-                    # Mistral returns: { "year": "YYYY", "assets": {...}, "liabilities": {...}, "equity": {...} }
-                    # Our logic expects flat rows for calculate_financial_ratios or precomputed results
-                    
-                    # Refactored: use the unified categorized calculation logic from app.py
-                    categorized_resp = calculate_financial_ratios(mistral_financials=mistral_data)
-                    ratios_result = categorized_resp.get("ratios", categorized_resp)
-                    
-                    # Round all numeric values in ratios_result to 2 decimal places
-                    def round_ratios(obj):
-                        if isinstance(obj, dict):
-                            return {k: round_ratios(v) for k, v in obj.items()}
-                        elif isinstance(obj, list):
-                            return [round_ratios(x) for x in obj]
-                        elif isinstance(obj, (int, float)):
-                            return round(float(obj), 2)
-                        return obj
-                    
-                    ratios_result = round_ratios(ratios_result)
-                    print("Ratios Result:", ratios_result)
-                    
-                    setattr(pdf_store, 'ratios_result', ratios_result)
-                    setattr(pdf_store, 'balance_sheet_data', mistral_data)
-                    try:
-                        log_balance_sheet(session_id, mistral_data)
-                    except Exception:
-                        pass
-                    return jsonify({"response": ratios_result, "method": "mistral"}), 200
-            except Exception as e:
-                print(f"Mistral OCR extraction failed: {e}")
-                # Fallback to deterministic logic below
-
-        # If we have a PDF path but no stored balance_data, attempt deterministic extraction now
-        if not balance_data and pdf_path:
-            try:
-                pages = extract_balance_sheet_pages(pdf_path, max_pages=3)
-                if pages:
-                    doc = fitz.open(pdf_path)
-                    parsed_rows = []
-                    for pnum in pages:
-                        parsed = parse_balance_sheet_page(doc.load_page(pnum))
-                        if parsed:
-                            # parse_balance_sheet_page returns list of dicts
-                            if isinstance(parsed, list):
-                                parsed_rows.extend(parsed)
-                            else:
-                                parsed_rows.append(parsed)
-                    doc.close()
-                    if parsed_rows:
-                        balance_data = parsed_rows
-                        # attach to store
-                        setattr(pdf_store, 'balance_sheet_data', balance_data)
-                        # compute ratios and attach
-                        try:
-                            ratios_result = calculate_financial_ratios(balance_data, None)
-                            setattr(pdf_store, 'ratios_result', ratios_result)
-                            return jsonify({"response": ratios_result}), 200
-                        except Exception as e:
-                            print(f"Error computing ratios after deterministic extraction: {e}")
-            except Exception as e:
-                print(f"Deterministic extraction failed: {e}")
-
-            if pdf_path:
-                print(f"Attempting on-demand extraction from: {pdf_path}")
-                try:
-                    extracted = extract_tables_from_pdf(pdf_path)
-                    # If gemini returned structured JSON
-                    bs = extracted.get("balanceSheet")
-                    pl = extracted.get("profitAndLoss")
-                    # Validate AI-extracted balance sheet; if invalid, discard so deterministic fallback can run
-                    try:
-                        if bs is not None and not validate_balance_sheet_data(bs):
-                            print("On-demand LLM-extracted balance sheet failed validation — discarding to allow deterministic fallback.")
-                            bs = None
-                    except Exception as e:
-                        print(f"Error validating on-demand LLM-extracted balance sheet: {e}")
-
-                    if bs:
-                        # Persist findings into the store
-                        try:
-                            # If bs is a list-like table rows (from our parser), store directly
-                            if isinstance(bs, list):
-                                pdf_store.balance_sheet_data = bs
-                                try:
-                                    log_balance_sheet(session_id, bs)
-                                except Exception:
-                                    pass
-                            else:
-                                # Structured JSON (Gemini) - store under balance_sheet_data for debugging
-                                pdf_store.balance_sheet_data = bs
-                                try:
-                                    log_balance_sheet(session_id, bs)
-                                except Exception:
-                                    pass
-                            
-                            # Store P&L data if available
-                            if pl:
-                                pdf_store.profit_loss_data = pl
-
-                            # Persist to session file for durability
-                            try:
-                                session_file = os.path.join(SESSIONS_FOLDER, f"{session_id}.json")
-                                with open(session_file, "r", encoding="utf-8") as sf:
-                                    prev = json.load(sf)
-                            except Exception:
-                                prev = {}
-                            prev.update({"balance_sheet_data": pdf_store.balance_sheet_data, "balance_sheet_pdf": pdf_path})
-                            if pl:
-                                prev.update({"profit_loss_data": pdf_store.profit_loss_data})
-                            try:
-                                with open(session_file, "w", encoding="utf-8") as sf:
-                                    json.dump(prev, sf, ensure_ascii=False, indent=2)
-                            except Exception as e:
-                                print(f"Failed to persist extracted balance for {session_id}: {e}")
-
-                        except Exception as e:
-                            print(f"Failed to assign extracted balance sheet to store: {e}")
-                    else:
-                        print("No balance sheet found during on-demand extraction.")
-                except Exception as e:
-                    print(f"On-demand extraction failed: {e}")
-
-            # Re-fetch balance_data after attempted extraction
-            balance_data = getattr(pdf_store, "balance_sheet_data", None)
-
-            # Re-fetch balance_data after attempted extraction
-            balance_data = getattr(pdf_store, "balance_sheet_data", None)
-            if not balance_data: # If still no balance sheet data
-                try:
-                    # Use the LLM to analyze why it might be missing
-                    analysis_prompt = "Analyze the table of contents or first few pages of this document. Is a standard Balance Sheet present? If not, what type of document does this appear to be (e.g., Director's Report, Standalone Financials, etc.)? Explain briefly why financial ratios cannot be calculated."
-                    
-                    # Ensure the analyzer's chain is initialized
-                    if not hasattr(pdf_store, '_chat_chain') or pdf_store._chat_chain is None:
-                        if not pdf_store.filepath:
-                            raise ValueError("No document filepath set for analysis.")
-                        vectorstore, _ = pdf_store.process_document(pdf_store.filepath)
-                        pdf_store._chat_chain = pdf_store.create_chain(vectorstore)
-                    
-                        llm_explanation = pdf_store.analyze(pdf_store._chat_chain, analysis_prompt).get("answer", "Could not determine document type.")
-                        # Attempt a deterministic text-based extraction for limited ratios as a helpful fallback
-                        det_ratios = None
-                        try:
-                            pdf_path_for_det = None
-                            # try to reuse earlier pdf_path if present
-                            try:
-                                pdf_path_for_det = pdf_path if 'pdf_path' in locals() and pdf_path else None
-                            except Exception:
-                                pdf_path_for_det = None
-
-                            if not pdf_path_for_det:
-                                # try session metadata file
-                                session_file = os.path.join(SESSIONS_FOLDER, f"{session_id}.json")
-                                if os.path.exists(session_file):
-                                    try:
-                                        with open(session_file, 'r', encoding='utf-8') as sf:
-                                            sdata = json.load(sf)
-                                        cand = sdata.get('balance_sheet_pdf') or sdata.get('original_filepath') or sdata.get('filepath')
-                                        if cand and os.path.exists(cand):
-                                            pdf_path_for_det = cand
-                                    except Exception:
-                                        pdf_path_for_det = None
-
-                            if pdf_path_for_det:
-                                try:
-                                    from extract_and_calc_ratios import extract_text_from_pdf
-                                    try:
-                                        from ratio_smoke_test import calculate_financial_ratios_from_text
-                                    except Exception:
-                                        calculate_financial_ratios_from_text = None
-
-                                    txt = extract_text_from_pdf(pdf_path_for_det)
-                                    if calculate_financial_ratios_from_text:
-                                        try:
-                                            det_ratios = calculate_financial_ratios_from_text(txt)
-                                        except Exception:
-                                            det_ratios = None
-
-                                    # If no deterministic ratios produced, try note-metrics heuristics
-                                    if not det_ratios or (isinstance(det_ratios, dict) and len(det_ratios) == 0):
-                                        try:
-                                            metrics = extract_key_metrics_from_text(txt)
-                                            if metrics:
-                                                det_ratios = compute_minimal_ratios_from_metrics(metrics)
-                                        except Exception as e:
-                                            print(f"Note-metric deterministic fallback failed: {e}")
-                                except Exception as e:
-                                    print(f"Deterministic fallback extraction failed: {e}")
-                                    det_ratios = None
-                        except Exception as e:
-                            print(f"Error during deterministic fallback preparation: {e}")
-
-                        # Return a non-error response with helpful diagnostics and any deterministic ratios
-                        resp = {
-                            "warning": "Could not find a balance sheet in the document.",
-                            "analysis": llm_explanation,
-                            "status": "no_balance_sheet",
-                        }
-                        if det_ratios:
-                            resp["deterministic_ratios"] = det_ratios
-
-                        return jsonify(resp), 200
-                except Exception as analysis_error:
-                        print(f"Error during LLM-based analysis of missing balance sheet: {analysis_error}")
-                        # Return 200 with diagnostic info rather than an HTTP 400 error to the client
-                        return jsonify({"warning": "No balance sheet data was found, and secondary analysis failed.", "error": str(analysis_error)}), 200
-
-        # Try to fetch P&L data as well for comprehensive ratios
-        profit_loss_data = getattr(pdf_store, "profit_loss_data", None)
-        print(f"DEBUG /chat/financial-ratio: P&L data retrieved: {profit_loss_data is not None}")
-        if profit_loss_data:
-            print(f"DEBUG: P&L data type: {type(profit_loss_data)}, keys: {list(profit_loss_data.keys()) if isinstance(profit_loss_data, dict) else 'N/A'}")
-        
-        # If balance_data is structured Gemini JSON, compute ratios directly from it
-        if isinstance(balance_data, dict):
-            print(f"DEBUG: Balance data is dict (Gemini JSON format)")
-            # Sanitize Gemini JSON before computing
-            try:
-                balance_data = sanitize_balance_sheet_data(balance_data)
-            except Exception as e:
-                print(f"Failed to sanitize Gemini balance_data: {e}")
-            # compute_ratios_from_gemini_json returns a simple dict of computed numbers
-            # wrap it into the standard response shape expected by downstream logic
-            try:
-                computed = compute_ratios_from_gemini_json(balance_data)
-                if isinstance(computed, dict) and not computed.get("ratios"):
-                    financial_ratios = {"ratios": computed, "status": "Computed from Gemini JSON"}
-                else:
-                    financial_ratios = computed
-            except Exception as e:
-                print(f"Error computing ratios from Gemini JSON: {e}")
-                financial_ratios = {"ratios": {}, "status": "Error computing ratios from Gemini JSON"}
-            comprehensive_bs = None
-        else:
-            # Flatten nested page lists into a single list of rows if necessary
-            print(f"DEBUG: Balance data is {type(balance_data).__name__}, flattening if needed")
-            flattened = []
-            if isinstance(balance_data, list):
-                for page in balance_data:
-                    if isinstance(page, list):
-                        flattened.extend(page)
-                    else:
-                        flattened.append(page)
-            else:
-                flattened = [balance_data]
-
-            print(f"DEBUG: Flattened balance sheet has {len(flattened)} rows")
-            print(f"DEBUG: Calling calculate_financial_ratios with P&L data: {profit_loss_data is not None}")
-            
-            # Extract comprehensive balance sheet items with detailed breakdown
-            comprehensive_bs = extract_comprehensive_balance_sheet_items(flattened)
-            print(f"DEBUG: Comprehensive balance sheet extracted: {comprehensive_bs is not None}")
-            
-            # Use the calculate_financial_ratios implementation with P&L data for comprehensive ratios
-            financial_ratios = calculate_financial_ratios(flattened, profit_loss_data)
-            print(f"DEBUG: Financial ratios calculated. Keys: {list(financial_ratios.get('ratios', {}).keys()) if isinstance(financial_ratios, dict) else 'N/A'}")
-
-        # If calculation yielded empty or missing ratios, attempt deterministic fallback using text extraction
-        try:
-            ratios_empty = False
-            if not financial_ratios or not isinstance(financial_ratios, dict):
-                ratios_empty = True
-            else:
-                # financial_ratios may be {'ratios': {...}, ...}
-                inner = financial_ratios.get('ratios') if isinstance(financial_ratios, dict) else None
-                if not inner or (isinstance(inner, dict) and len(inner) == 0):
-                    ratios_empty = True
-
-            if ratios_empty:
-                print("Fallback: computed ratios empty — attempting deterministic text-based extraction from PDF.")
-                # Try to locate pdf_path as earlier
-                pdf_path = None
-                pdf_path_candidate = getattr(pdf_store, "balance_sheet_pdf", None)
-                if pdf_path_candidate and os.path.exists(pdf_path_candidate):
-                    pdf_path = pdf_path_candidate
-
-                if not pdf_path:
-                    session_file = os.path.join(SESSIONS_FOLDER, f"{session_id}.json")
-                    if os.path.exists(session_file):
-                        try:
-                            with open(session_file, "r", encoding="utf-8") as sf:
-                                sdata = json.load(sf)
-                            cand = sdata.get("balance_sheet_pdf") or sdata.get("original_filepath") or sdata.get("filepath")
-                            if cand and os.path.exists(cand):
-                                pdf_path = cand
-                        except Exception as e:
-                            print(f"Fallback: failed to read session file for PDF path: {e}")
-
-                if not pdf_path:
-                    # last resort: look in upload folder
-                    for fn in os.listdir(UPLOAD_FOLDER):
-                        if session_id in fn:
-                            candidate = os.path.join(UPLOAD_FOLDER, fn)
-                            if os.path.exists(candidate):
-                                pdf_path = candidate
-                                break
-
-                if pdf_path:
-                    try:
-                        # Use the text extractor + deterministic ratio calculator
-                        from extract_and_calc_ratios import extract_text_from_pdf
-                        try:
-                            from ratio_smoke_test import calculate_financial_ratios_from_text
-                        except Exception:
-                            calculate_financial_ratios_from_text = None
-
-                        print(f"Fallback: extracting text from {pdf_path}")
-                        txt = extract_text_from_pdf(pdf_path)
-                        det_ratios = None
-                        if calculate_financial_ratios_from_text:
-                            try:
-                                det_ratios = calculate_financial_ratios_from_text(txt)
-                            except Exception:
-                                det_ratios = None
-
-                        # If the text-based full-ratio calculator didn't work, try the notes-based heuristics
-                        if not det_ratios or (isinstance(det_ratios, dict) and len(det_ratios) == 0):
-                            try:
-                                metrics = extract_key_metrics_from_text(txt)
-                                if metrics:
-                                    det_ratios = compute_minimal_ratios_from_metrics(metrics)
-                            except Exception as e:
-                                print(f"Note-metric deterministic fallback failed: {e}")
-
-                        # Wrap into the expected structure
-                        if det_ratios:
-                            financial_ratios = {"ratios": det_ratios, "status": "Deterministic extraction applied"}
-                            print("Fallback: deterministic ratios computed and applied.")
-                        else:
-                            print("Fallback: deterministic extraction produced no ratios.")
-                    except Exception as e:
-                        print(f"Fallback deterministic extraction failed: {e}")
-                else:
-                    print("Fallback: no PDF path available to run deterministic extraction.")
-        except Exception as e:
-            print(f"Error during fallback deterministic ratio extraction: {e}")
-        
-        # Enhance with AI-grounded analysis (fact-based, no hallucination)
-        enhanced_ratios = generate_ai_grounded_ratio_analysis(pdf_store, balance_data, financial_ratios)
-
-        # Build a flattened, normalized ratios dict for frontend consumption.
-        def flatten_ratios(grouped: dict) -> dict:
-            flat = {}
-            try:
-                # Include balance sheet summary absolute values
-                bs = grouped.get("balance_sheet_summary", {})
-                for k, v in bs.items():
-                    flat[k] = v
-
-                # Helper to copy ratios and normalize percentages to fractions
-                def copy_section(section_name):
-                    sec = grouped.get(section_name, {})
-                    for k, val in sec.items():
-                        if val is None:
-                            flat[k] = None
-                            continue
-                        # If value looks like a percentage (>1 and likely >1), convert to fraction
-                        try:
-                            num = float(val)
-                            if abs(num) > 1 and section_name in ("profitability_ratios",):
-                                # convert percentage to fraction
-                                flat[k] = round(num / 100.0, 4)
-                            else:
-                                # keep as-is (ratios like current_ratio are already fractions)
-                                flat[k] = round(num, 4) if isinstance(num, float) or isinstance(num, int) else val
-                        except Exception:
-                            flat[k] = val
-
-                # Copy known sections
-                for s in ["liquidity_ratios", "profitability_ratios", "solvency_ratios", "capital_structure_ratios", "efficiency_ratios", "activity_ratios", "working_capital_ratios"]:
-                    copy_section(s)
-
-                # Also include dupont analysis simplified keys
-                dup = grouped.get("dupont_analysis", {})
-                for k, v in dup.items():
-                    try:
-                        flat[k] = round(float(v), 4)
-                    except Exception:
-                        flat[k] = v
-
-            except Exception as e:
-                print(f"Error flattening ratios: {e}")
-            return flat
-
-        # grouped ratios are inside enhanced_ratios['ratios'] currently
-        grouped = enhanced_ratios.get("ratios") if isinstance(enhanced_ratios, dict) else {}
-
-        # Build a best-effort extracted_numbers map from available local variables or grouped data
-        extracted_numbers = {}
-        try:
-            # Use values we extracted earlier if present
-            for k in [
-                'total_assets', 'current_assets', 'non_current_assets',
-                'total_liabilities', 'current_liabilities', 'non_current_liabilities',
-                'equity', 'share_capital', 'reserves', 'inventory', 'receivables', 'cash', 'payables',
-                'revenue', 'cogs', 'gross_profit', 'operating_income', 'net_income', 'ebit', 'interest_expense', 'ebitda'
-            ]:
-                if k in locals() and locals().get(k) is not None:
-                    extracted_numbers[k] = locals().get(k)
-
-            # If grouped contains a balance_sheet_summary, pull values from there as fallback
-            if not extracted_numbers and isinstance(grouped, dict):
-                bs = grouped.get('balance_sheet_summary', {})
-                for k, v in bs.items():
-                    extracted_numbers[k] = v
-
-        except Exception as e:
-            print(f"Error assembling extracted_numbers: {e}")
-
-        flat = flatten_ratios(grouped if isinstance(grouped, dict) else {})
-
-        # Attach extracted numbers into flat output for frontend transparency (unless already included)
-        if '_extracted_numbers' not in flat:
-            flat['_extracted_numbers'] = extracted_numbers or grouped.get('_extracted_numbers') if isinstance(grouped, dict) else {}
-
-        # Preserve grouped structure for debugging/AI analysis, but expose flat for frontend convenience
-        enhanced_ratios["ratios_grouped"] = grouped
-        enhanced_ratios["ratios"] = flat
-
-        print("\n================ FINAL FINANCIAL RATIO RESPONSE ================\n")
-        import json
-        print("Verified ratios:")
-        print(json.dumps(enhanced_ratios, indent=2))
-        print("\n===============================================================\n")
-
-        return jsonify({
-            "response": enhanced_ratios,
-            "balance_sheet_data": balance_data,
-            "comprehensive_balance_sheet": comprehensive_bs,
-            "table_rows": getattr(pdf_store, 'table_rows', None)
-        }), 200
-
-    except ValueError as ve:
-        import traceback
-        tb = traceback.format_exc()
-        print(f"ValueError in financial_ratio: {tb}")
-        # Return diagnostics instead of HTTP 400 so frontend can display helpful info
-        return jsonify({"warning": "A value error occurred during processing.", "error": str(ve), "trace": tb}), 200
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print(f"Error in financial_ratio: {tb}")
-        return jsonify({"error": "Error processing the financial ratio.", "exception": str(e), "trace": tb}), 500
-
-@app.route("/chat", methods=["POST"])
-def chat():
-    try:
-        session_id = get_session_id()
-        pdf_store = get_pdf_store(session_id)
-        data = request.get_json()
-        prompt = data.get("prompt")
-        if not prompt:
-            return jsonify({"error": "Missing chat prompt."}), 400
-        
-        print(f"Chat query for session {session_id}: {prompt}")
-        answer = pdf_store.chat_answer(prompt)
-        return jsonify({"response": answer})
-
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        print(f"Chat error: {str(e)}")
-        return jsonify({"error": "Internal server error during chat processing."}), 500
-
-@app.route("/chat/compliance-gap", methods=["POST"])
-def compliance_gap():
-    try:
-        session_id = get_session_id()
-        pdf_store = get_pdf_store(session_id)
-        response = pdf_store.get_compliance_gap_report()
-        return jsonify({"response": response})
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        print(f"Report error: {str(e)}")
-        return jsonify({"error": "Error generating compliance gap report."}), 500
-
-@app.route("/chat/auditor-report", methods=["POST"])
-def auditor_report():
-    try:
-        session_id = get_session_id()
-        pdf_store = get_pdf_store(session_id)
-        response = pdf_store.get_auditor_report_summary()
-        return jsonify({"response": response})
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        print(f"Report error: {str(e)}")
-        return jsonify({"error": "Error generating auditor report summary."}), 500
-
-@app.route("/chat/director-report", methods=["POST"])
-def director_report():
-    """Stream director report compliance check results."""
-    try:
-        session_id = get_session_id()
-        pdf_store = get_pdf_store(session_id)
-        
-        def generate():
-            try:
-                count = 0
-                for result in pdf_store.get_director_report_compliance_check():
-                    count += 1
-                    print(f"Yielding result {count}: {result.get('rule', 'Unknown')}")
-                    yield json.dumps(result) + '\n'
-                print(f"Total results yielded: {count}")
-            except Exception as e:
-                print(f"Error in generate: {str(e)}")
-                yield json.dumps({"error": str(e)}) + '\n'
-        
-        response = Response(stream_with_context(generate()), mimetype='application/jsonl')
-        response.headers['Cache-Control'] = 'no-cache'
-        response.headers['X-Accel-Buffering'] = 'no'
-        return response
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-    except Exception as e:
-        print(f"Report error: {str(e)}")
-        return jsonify({"error": "Error generating director report compliance check."}), 500
-
-@app.route("/chat/summary", methods=["POST"])
-def overall_summary():
-    try:
-        # ORIGINAL FLOW (unchanged)
-        session_id = get_session_id()
-        pdf_store = get_pdf_store(session_id)
-        response = pdf_store.get_overall_summary()
-
-        # NEW: Infer company name from session filepath and run Tavily search for review
-        company_name = None
-        try:
-            if pdf_store and getattr(pdf_store, 'filepath', None):
-                basename = os.path.basename(pdf_store.filepath)
-                if '_' in basename:
-                    # Filename format: sessionid_companyname-...pdf
-                    company_part = basename.split('_', 1)[1].rsplit('.', 1)[0]
-                    company_name = company_part.split('-')[0] if '-' in company_part else company_part
-        except Exception as e:
-            print(f"Error inferring company name: {e}")
-
-        tavily_result = None
-        if company_name:
-            print(f"DEBUG: Inferred company name: '{company_name}'")  # Debug log
-            try:
-                tavily_result = search_company(company_name, top_k=5)
-                print(f"DEBUG: Tavily result: {tavily_result}")  # Debug log
-            except Exception as e:
-                print(f"Error searching company '{company_name}': {e}")
-                tavily_result = None
-
-        # Integrate Tavily results into the summary if available under "Review About the Company"
-        if tavily_result and isinstance(tavily_result, dict) and "results" in tavily_result:
-            # Extract key findings from Tavily search (focused on fraud, negative feedback, criminal records)
-            findings = []
-            for result in tavily_result["results"][:3]:  # Limit to top 3 results
-                title = result.get("title", "")
-                snippet = result.get("content", "")[:200]  # Truncate snippet
-                url = result.get("url", "")
-                findings.append(f"- **{title}**: {snippet}... [Source]({url})")
-
-            if findings:
-                tavily_section = "\n\n### Review About the Company\n\n" + "\n\n".join(findings)
-                response += tavily_section
-
-        # Return original response + optional tavily result
-        return jsonify({
-            "response": response,         # now includes integrated Tavily findings
-            "tavily_search": tavily_result   # raw Tavily data for reference
-        })
-
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
-
-    except Exception as e:
-        print(f"Report error: {str(e)}")
-        return jsonify({"error": "Error generating overall summary."}), 500
 
 
-@app.route("/api/ai-ratios-graph", methods=["POST"])
-def get_chart_data():
-    """Generate chart data for financial ratios and balance sheet composition"""
-    try:
-        session_id = request.form.get('session_id') or request.json.get('session_id')
-        if not session_id:
-            return jsonify({"error": "session_id is required"}), 400
-        
-        session_file = Config.SESSIONS_DIR / f"{session_id}.json"
-        if not session_file.exists():
-            return jsonify({"error": f"Session {session_id} not found"}), 404
-        
-        with open(session_file, 'r', encoding='utf-8') as f:
-            session_data = json.load(f)
-        
-        balance_sheet_data = session_data.get('balance_sheet_data', [])
-        
-        # Flatten balance sheet data if it's nested
-        if balance_sheet_data and isinstance(balance_sheet_data[0], list):
-            balance_sheet_data = balance_sheet_data[0]
-        
-        # Extract chart data from balance sheet
-        chart_data = {
-            "asset_composition": {},
-            "liability_composition": {},
-            "ratios": {},
-            "expenses": {}
-        }
-        
-        # Parse balance sheet for composition data
-        total_assets = 0
-        total_liabilities = 0
-        total_equity = 0
-        current_assets = 0
-        non_current_assets = 0
-        current_liabilities = 0
-        non_current_liabilities = 0
-        
-        for row in balance_sheet_data:
-            if not isinstance(row, dict):
-                continue
-            
-            # Find the description/particulars column
-            particulars = ""
-            for key, val in row.items():
-                if isinstance(val, str) and len(val) > 0 and not val.replace(',', '').replace('.', '').isdigit():
-                    particulars = val.lower()
-                    break
-            
-            # Find numeric values in the row
-            for key, val in row.items():
-                num = parse_number(val)
-                if num is not None:
-                    # Categorize based on description
-                    if 'current asset' in particulars or 'inventory' in particulars or 'cash' in particulars or 'receivable' in particulars:
-                        current_assets = num
-                        total_assets = max(total_assets, num)
-                    elif 'non-current asset' in particulars or 'property' in particulars or 'fixed asset' in particulars:
-                        non_current_assets = num
-                        total_assets = max(total_assets, num)
-                    elif 'total asset' in particulars:
-                        total_assets = num
-                    elif 'current liability' in particulars:
-                        current_liabilities = num
-                        total_liabilities = max(total_liabilities, num)
-                    elif 'non-current liability' in particulars:
-                        non_current_liabilities = num
-                        total_liabilities = max(total_liabilities, num)
-                    elif 'total liability' in particulars or 'total liabilities' in particulars:
-                        total_liabilities = num
-                    elif 'total equity' in particulars or 'shareholders equity' in particulars:
-                        total_equity = num
-        
-        # Build asset composition pie chart data
-        if safe_gt(total_assets, 0):
-            chart_data["asset_composition"] = {
-                "Current Assets": current_assets if safe_gt(current_assets, 0) else total_assets * 0.4,
-                "Non-Current Assets": non_current_assets if safe_gt(non_current_assets, 0) else total_assets * 0.6
-            }
-        
-        # Build liability composition pie chart data
-        if safe_gt(total_liabilities, 0):
-            chart_data["liability_composition"] = {
-                "Current Liabilities": current_liabilities if safe_gt(current_liabilities, 0) else total_liabilities * 0.5,
-                "Non-Current Liabilities": non_current_liabilities if safe_gt(non_current_liabilities, 0) else total_liabilities * 0.5
-            }
-        
-        # Calculate key ratios for bar chart
-        chart_data["ratios"] = {
-            "Total Assets": {"Current Year": total_assets},
-            "Total Liabilities": {"Current Year": total_liabilities},
-            "Total Equity": {"Current Year": total_equity},
-            "Current Ratio": {"Current Year": current_assets / current_liabilities if safe_gt(current_liabilities, 0) else 0},
-            "Debt to Equity": {"Current Year": total_liabilities / total_equity if safe_gt(total_equity, 0) else 0}
-        }
-        
-        return jsonify({
-            "asset_composition": chart_data["asset_composition"],
-            "liability_composition": chart_data["liability_composition"],
-            "ratios": chart_data["ratios"],
-            "expenses": {}
-        })
-    
-    except Exception as e:
-        print(f"Chart data error: {str(e)}")
-        return jsonify({"error": f"Error generating chart data: {str(e)}"}), 500
+
+
+
+
 
 
 @app.route('/api/company/profile/<cin>', methods=['GET'])
@@ -3786,6 +2912,7 @@ def get_company_profile(cin):
     """Get company profile data for peer comparison"""
     try:
         # Mock data for demonstration - in real implementation, this would fetch from database/API
+
         mock_profiles = {
             "L12345": {
                 "company": {
@@ -3854,70 +2981,6 @@ def get_company_profile(cin):
                 "riskFlags": ["Strong financial position"]
             }
         }
-
-        # Return mock data for known CINs, or generate sample data for others
-        if cin in mock_profiles:
-            return jsonify(mock_profiles[cin])
-        else:
-            # Generate sample data for unknown CINs
-            import random
-            sample_data = {
-                "company": {
-                    "name": f"Sample Company {cin}",
-                    "industry": "Information Technology",
-                    "sector": "Technology",
-                    "incorporationYear": random.randint(2000, 2020)
-                },
-                "financials": [
-                    {"year": 2023, "revenue": random.randint(100000000, 1000000000), "profit": random.randint(10000000, 100000000)},
-                    {"year": 2022, "revenue": random.randint(100000000, 1000000000), "profit": random.randint(10000000, 100000000)},
-                    {"year": 2021, "revenue": random.randint(100000000, 1000000000), "profit": random.randint(10000000, 100000000)}
-                ],
-                "directors": [
-                    {"name": f"Director {random.randint(1,10)}", "designation": "CEO"},
-                    {"name": f"Director {random.randint(11,20)}", "designation": "CFO"}
-                ],
-                "charges": [
-                    {"charge_id": f"CH{random.randint(100,999)}", "amount": random.randint(1000000, 50000000), "status": "Satisfied"}
-                ],
-                "riskFlags": ["Sample risk flag"]
-            }
-            return jsonify(sample_data)
-
-    except Exception as e:
-        print(f"Error getting company profile for CIN {cin}: {e}")
-        return jsonify({"error": f"Failed to fetch company profile: {str(e)}"}), 500
-
-
-@app.route('/search/company', methods=['POST'])
-def search_company_endpoint():
-    """Search company on the web via Tavily and merge with session PDF extraction.
-
-    Request JSON: { "company_name": (optional), "session_id": (optional) }
-    """
-    try:
-        data = request.get_json(silent=True) or {}
-        company_name = data.get('company_name')
-        session_id = data.get('session_id')
-
-        # If session provided and no company_name, try to infer from stored balance_sheet_data
-        pdf_info = None
-        if session_id:
-            try:
-                store = get_pdf_store(session_id)
-                pdf_info = {
-                    'balance_sheet_data': getattr(store, 'balance_sheet_data', None),
-                    'filepath': getattr(store, 'filepath', None)
-                }
-                if not company_name and store and getattr(store, 'balance_sheet_data', None):
-                    # attempt to read first Particulars entry
-                    bsd = store.balance_sheet_data
-                    if isinstance(bsd, list) and len(bsd) > 0:
-                        first = bsd[0]
-                        if isinstance(first, list) and len(first) > 0 and isinstance(first[0], dict):
-                            company_name = first[0].get('Particulars') or first[0].get('particulars')
-            except Exception:
-                pdf_info = None
 
         if not company_name:
             return jsonify({"error": "company_name required (or provide session_id with inferable company name)"}), 400

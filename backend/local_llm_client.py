@@ -34,7 +34,7 @@ def extract_financials(text_content):
     if not text_content:
         return None
 
-    prompt = f"""
+    prompt = """
     You are an expert financial analyst. Your task is to extract the Balance Sheet from the provided text into a highly structured JSON format (following demo.json style).
     
     The text may contain data for multiple years. ALWAYS extract data for BOTH the LATEST financial year AND the PREVIOUS financial year if available.
@@ -86,8 +86,7 @@ def extract_financials(text_content):
     6. Return ONLY the raw JSON block (no markdown, no explanations).
 
     TEXT CONTENT:
-    {text_content[:25000]}
-    """
+    """ + text_content[:25000]
 
     print(f"🤖 Sending text to local LLM ({MODEL_NAME}) for extraction...")
     response_text = call_local_llm(prompt)
@@ -120,7 +119,7 @@ def redraft_json(json_data, context_text=None):
     if not json_data:
         return None
 
-    prompt = f"""
+    prompt = """
     You are a senior financial data engineer. Your task is to "redraft" and refine the provided JSON data into a specific highly-structured format (demo.json style).
     
     The input JSON is a draft extraction from a financial report. Items may be missing, misplaced, or formatted incorrectly.
@@ -164,11 +163,7 @@ def redraft_json(json_data, context_text=None):
     Return ONLY the refined JSON block.
 
     DRAFT JSON:
-    {json.dumps(json_data, indent=2)}
-
-    CONTEXT TEXT:
-    {context_text[:15000] if context_text else "No context provided."}
-    """
+    """ + json.dumps(json_data, indent=2) + "\n\nCONTEXT TEXT:\n" + (context_text[:15000] if context_text else "No context provided.")
 
     print(f"🤖 Redrafting JSON with local LLM ({MODEL_NAME})...")
     response_text = call_local_llm(prompt)
